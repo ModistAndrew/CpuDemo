@@ -6,3 +6,4 @@ testspace/*
 *.dump
 *.data
 fpga/fpga
+.idea
