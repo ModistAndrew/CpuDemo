@@ -13,7 +13,7 @@ module LoadStoreBuffer(
     input mc_rdy,
     input [31:0] mc_read_data,
 // instruction from decoder
-    output dec_en,
+    output dec_full,
     input dec_rdy,
     input [3:0] dec_type,
     input [31:0] dec_data_j,
@@ -43,7 +43,7 @@ module LoadStoreBuffer(
     output [31:0] broadcast_data,
 // commit info from reorder buffer (to ensure store instructions are executed in order)
     input commit_empty,
-    input[`ROB_WIDTH-1:0] commit_rob_id,
+    input[`ROB_WIDTH-1:0] commit_current_rob_id
 );
     reg[`LSB_WIDTH-1:0] head, tail;
     reg present[0:`LSB_SIZE-1];

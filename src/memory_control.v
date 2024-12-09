@@ -1,6 +1,6 @@
 // manage memory access from load store buffer and decoder
-// input: enable and address should be kept valid until rdy is high
-// output: rdy is high and data is valid at exactly the same time (not present when writing to memory)
+// input: enable and address should be kept valid until rdy is high. after that, data can change
+// output: rdy is high and data is valid at exactly the same time
 module MemoryControl (
     input clk_in,
     input rst_in,
@@ -23,7 +23,7 @@ module MemoryControl (
     input [3:0] lsb_type,
     input [31:0] lsb_write_data,
     output lsb_rdy,
-    output [31:0] lsb_read_data,
+    output [31:0] lsb_read_data
 );
     reg [31:0] current_data;
     reg [31:0] current_addr;

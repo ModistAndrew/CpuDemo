@@ -5,12 +5,11 @@ module ReorderBuffer(
     input rst_in,
     input rdy_in,
 // instruction from decoder
-    output dec_en,
+    output dec_full,
     output dec_empty_id,
     input dec_rdy,
     input [1:0] dec_type,
-    input [31:0] dec_inst_res,
-    input [`REG_WIDTH-1:0] dec_inst_dest,
+    input [`REG_WIDTH-1:0] dec_dest,
     input [31:0] dec_inst_addr,
     input dec_predict,
 // flush when prediction is wrong
@@ -39,8 +38,8 @@ module ReorderBuffer(
     input [`ROB_WIDTH-1:0] rs_rob_id,
     input [31:0] rs_data,
 // commit info to load store buffer (to ensure store instructions are committed in order)
-    input commit_empty,
-    input[`ROB_WIDTH-1:0] commit_rob_id,
+    output commit_empty,
+    output [`ROB_WIDTH-1:0] commit_current_rob_id
 );
     reg[`ROB_WIDTH-1:0] head, tail;
     reg present[0:`ROB_SIZE-1];

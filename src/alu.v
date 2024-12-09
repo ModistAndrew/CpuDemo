@@ -11,6 +11,6 @@ module Alu(
     input [31:0] false_result,
     input [4:0] type,
     output rdy,
-    output [31:0] result,
+    output [31:0] result
 );
 endmodule

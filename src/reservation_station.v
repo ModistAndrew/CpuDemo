@@ -6,7 +6,7 @@ module ReservationStation(
     input wire rdy_in,
     input flush,
 // instruction from decoder
-    output dec_en,
+    output dec_full,
     input dec_rdy,
     input [4:0] dec_type,
     input [31:0] dec_data_j,
@@ -16,6 +16,7 @@ module ReservationStation(
     input [`ROB_WIDTH-1:0] dec_dependency_j,
     input [`ROB_WIDTH-1:0] dec_dependency_k,
     input [`ROB_WIDTH-1:0] dec_rob_id,
+    input [31:0] dec_imm,
 // data to reorder buffer
     input rob_en,
     output rob_rdy,
@@ -41,7 +42,7 @@ module ReservationStation(
 // broadcast to rs and lsb
     output broadcast_en,
     output [31:0] broadcast_rob_id,
-    output [31:0] broadcast_data,
+    output [31:0] broadcast_data
 );
     reg[`RS_WIDTH-1:0] head, tail;
     reg present[0:`RS_SIZE-1];

@@ -24,9 +24,9 @@ module RegisterFile(
     output dec_pending_j,
     output dec_pending_k,
     output[`ROB_WIDTH-1:0] dec_dependency_j,
-    output[`ROB_WIDTH-1:0] dec_dependency_k,
+    output[`ROB_WIDTH-1:0] dec_dependency_k
 );
-    reg[31:0] reg[0:`REG_SIZE-1];
+    reg[31:0] data[0:`REG_SIZE-1];
     reg pending[0:`REG_SIZE-1];
     reg[`ROB_WIDTH-1:0] dependency[0:`REG_SIZE-1];
 endmodule
