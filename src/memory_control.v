@@ -20,7 +20,7 @@ module MemoryControl (
 // memory data from/to load store buffer
     input lsb_en,
     input [31:0] lsb_addr,
-    input [3:0] lsb_type,
+    input [`LSB_TYPE_WIDTH-1:0] lsb_type, // type in load store buffer
     input [31:0] lsb_write_data,
     output lsb_rdy,
     output [31:0] lsb_read_data

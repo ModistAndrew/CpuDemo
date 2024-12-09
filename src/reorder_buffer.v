@@ -8,7 +8,7 @@ module ReorderBuffer(
     output dec_full,
     output dec_empty_id,
     input dec_rdy,
-    input [1:0] dec_type,
+    input [`ROB_TYPE_WIDTH-1:0] dec_type,
     input [`REG_WIDTH-1:0] dec_dest,
     input [31:0] dec_inst_addr,
     input dec_predict,
@@ -44,7 +44,7 @@ module ReorderBuffer(
     reg[`ROB_WIDTH-1:0] head, tail;
     reg present[0:`ROB_SIZE-1];
     reg ready[0:`ROB_SIZE-1];
-    reg [1:0] type[0:`ROB_SIZE-1];
+    reg [`ROB_TYPE_WIDTH-1:0] type[0:`ROB_SIZE-1];
     reg [31:0] inst_res[0:`ROB_SIZE-1];
     reg [`REG_WIDTH-1:0] inst_dest[0:`ROB_SIZE-1];
     reg [31:0] inst_addr[0:`ROB_SIZE-1];

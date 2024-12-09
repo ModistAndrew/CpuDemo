@@ -8,14 +8,14 @@ module LoadStoreBuffer(
 // memory data from/to memory control
     output mc_en,
     output [31:0] mc_addr,
-    output [3:0] mc_type,
+    output [`LSB_TYPE_WIDTH-1:0] mc_type,
     output [31:0] mc_write_data,
     input mc_rdy,
     input [31:0] mc_read_data,
 // instruction from decoder
     output dec_full,
     input dec_rdy,
-    input [3:0] dec_type,
+    input [`LSB_TYPE_WIDTH-1:0] dec_type,
     input [31:0] dec_data_j,
     input [31:0] dec_data_k,
     input dec_pending_j,
@@ -47,7 +47,7 @@ module LoadStoreBuffer(
 );
     reg[`LSB_WIDTH-1:0] head, tail;
     reg present[0:`LSB_SIZE-1];
-    reg [3:0] type[0:`LSB_SIZE-1];
+    reg [`LSB_TYPE_WIDTH-1:0] type[0:`LSB_SIZE-1];
     reg [31:0] data_j[0:`LSB_SIZE-1];
     reg [31:0] data_k[0:`LSB_SIZE-1];
     reg pending_j[0:`LSB_SIZE-1];

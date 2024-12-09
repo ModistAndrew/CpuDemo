@@ -15,7 +15,7 @@ module Decoder (
     input rob_full,
     input rob_empty_id,  // use rob index to look up
     output rob_rdy,
-    output [1:0] rob_type,
+    output [`ROB_TYPE_WIDTH-1:0] rob_type,
     output [`REG_WIDTH-1:0] rob_dest,
     output [31:0] rob_inst_addr,
     output rob_predict,
@@ -24,7 +24,7 @@ module Decoder (
     // instruction to reservation station
     input rs_full,
     output rs_rdy,
-    output [4:0] rs_type,
+    output [`RS_TYPE_WIDTH-1:0] rs_type,
     output [31:0] rs_data_j,
     output [31:0] rs_data_k,
     output rs_pending_j,
@@ -36,7 +36,7 @@ module Decoder (
     // instruction to load store buffer
     input lsb_full,
     output lsb_rdy,
-    output [3:0] lsb_type,
+    output [`LSB_TYPE_WIDTH-1:0] lsb_type,
     output [31:0] lsb_data_j,
     output [31:0] lsb_data_k,
     output lsb_pending_j,
@@ -65,9 +65,9 @@ module Decoder (
   // FETCH
   reg [31:0] inst;
   // DECODE
-  reg [1:0] rob_type_buf;
-  reg [4:0] rs_type_buf;
-  reg [3:0] lsb_type_buf;
+  reg [`ROB_TYPE_WIDTH-1:0] rob_type_buf;
+  reg [`RS_TYPE_WIDTH-1:0] rs_type_buf;
+  reg [`LSB_TYPE_WIDTH-1:0] lsb_type_buf;
   reg need_rs; // for convenience, every instruction needs rs or lsb, but not both. either of them will commit the instruction to rob
   reg need_j;
   reg need_k;
@@ -153,8 +153,7 @@ module Decoder (
       pc_offset <= 0;
       rdy <= 0;
       last_pc <= 0;
-    end else
-    if (!rdy_in) begin  // skip
+    end else if (!rdy_in) begin  // skip
     end else if (flush) begin  // flush
       // TODO
     end else begin

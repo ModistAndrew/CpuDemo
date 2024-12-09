@@ -8,7 +8,7 @@ module ReservationStation(
 // instruction from decoder
     output dec_full,
     input dec_rdy,
-    input [4:0] dec_type,
+    input [`RS_TYPE_WIDTH-1:0] dec_type,
     input [31:0] dec_data_j,
     input [31:0] dec_data_k,
     input dec_pending_j,
@@ -28,7 +28,7 @@ module ReservationStation(
     output [31:0] alu_data_j,
     output [31:0] alu_data_k,
     output [31:0] alu_imm,
-    output [4:0] alu_type,
+    output [`RS_TYPE_WIDTH-1:0] alu_type,
     input alu_rdy,
     input [31:0] alu_rob_id_out,
     input [31:0] alu_result,
@@ -47,7 +47,7 @@ module ReservationStation(
 );
 // variables
     reg present[0:`RS_SIZE-1];
-    reg [4:0] type[0:`RS_SIZE-1];
+    reg [`RS_TYPE_WIDTH-1:0] type[0:`RS_SIZE-1];
     reg [31:0] data_j[0:`RS_SIZE-1];
     reg [31:0] data_k[0:`RS_SIZE-1];
     reg pending_j[0:`RS_SIZE-1];
@@ -116,8 +116,7 @@ module ReservationStation(
                 rob_id[i] <= 0;
                 imm[i] <= 0;
             end
-        end else
-        if (!rdy_in) begin  // skip
+        end else if (!rdy_in) begin  // skip
         end else if (flush) begin  // flush
         // TODO
         end else begin
