@@ -56,7 +56,10 @@ module Decoder (
     input reg_pending_j,
     input reg_pending_k,
     input [`ROB_WIDTH-1:0] reg_dependency_j,
-    input [`ROB_WIDTH-1:0] reg_dependency_k
+    input [`ROB_WIDTH-1:0] reg_dependency_k,
+    // pending mark to register file
+    output [`REG_WIDTH-1:0] pending_mark_reg_id,
+    output [`ROB_WIDTH-1:0] pending_mark_rob_id
 );
 // state and other variables
     localparam FETCH = 0;
@@ -100,10 +103,10 @@ module Decoder (
     wire [31:0] imm_b = {{19{inst[31]}}, inst[31], inst[7], inst[30:25], inst[11:8], 1'b0};
     wire [31:0] imm_u = {inst[31:12], 12'b0};
     wire [31:0] imm_j = {{11{inst[31]}}, inst[31], inst[19:12], inst[20], inst[30:21], 1'b0};
-    wire next_pc = pc + 4;
+    wire [31:0] next_pc = pc + 4;
     // COMMIT
     wire full = rob_full || (need_rs && rs_full) || (!need_rs && lsb_full);
-    wire jump_pc = pc + pc_offset;
+    wire [31:0] jump_pc = pc + pc_offset;
 // output
     wire pending_j = need_j && reg_pending_j;
     wire pending_k = need_k && reg_pending_k;
@@ -134,6 +137,8 @@ module Decoder (
     assign lsb_imm = imm_data;
     assign reg_reg_id_j = reg_id_j;
     assign reg_reg_id_k = reg_id_k;
+    assign pending_mark_reg_id = rdy ? dest : 0;
+    assign pending_mark_rob_id = rob_empty_id;
 // cycle
     always @(posedge clk_in) begin
         if (rst_in || flush && rdy_in) begin

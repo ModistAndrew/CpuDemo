@@ -1,3 +1,4 @@
+`include "params.v"
 // store and execute instructions
 // find the nearest executable instruction and execute it
 module ReservationStation(

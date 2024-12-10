@@ -25,9 +25,9 @@ module ReorderBuffer(
     output[`ROB_WIDTH-1:0] commit_rob_id,
 // register data to register file
     input[`ROB_WIDTH-1:0] reg_rob_id_j,
+    input[`ROB_WIDTH-1:0] reg_rob_id_k,
     output reg_ready_j,
     output[31:0] reg_data_j,
-    input[`ROB_WIDTH-1:0] reg_rob_id_k,
     output reg_ready_k,
     output[31:0] reg_data_k,
 // data from load store buffer
