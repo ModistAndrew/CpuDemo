@@ -21,7 +21,7 @@ initial begin
   rst=1;
   rx=0;
   repeat(50) #1 clk=!clk;
-  rst=0;
+  rst=0; 
   forever #1 clk=!clk;
 end
 
