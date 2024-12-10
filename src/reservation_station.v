@@ -22,6 +22,7 @@ module ReservationStation(
     output rob_rdy,
     output [`ROB_WIDTH-1:0] rob_rob_id,
     output [31:0] rob_data,
+    output rob_set_jump_addr,
 // data from alu
     output alu_en,
     output [31:0] alu_rob_id_in,
@@ -32,6 +33,7 @@ module ReservationStation(
     input alu_rdy,
     input [31:0] alu_rob_id_out,
     input [31:0] alu_result,
+    input alu_set_jump_addr,
 // broadcast from rs
     input rs_broadcast_en,
     input [31:0] rs_broadcast_rob_id,
@@ -91,6 +93,7 @@ module ReservationStation(
     assign rob_rdy = alu_rdy;
     assign rob_rob_id = alu_rob_id_out;
     assign rob_data = alu_result;
+    assign rob_set_jump_addr = alu_set_jump_addr;
     assign alu_en = executable;
     assign alu_rob_id_in = rob_id[executable_pos];
     assign alu_data_j = data_j[executable_pos];
@@ -103,7 +106,7 @@ module ReservationStation(
 // cycle
     always @(posedge clk_in) begin: Main
         integer i;
-        if (rst_in) begin
+        if (rst_in || flush && rdy_in) begin
             for (i = 0; i < `RS_SIZE; i = i + 1) begin
                 present[i] <= 0;
                 type[i] <= 0;
@@ -116,10 +119,7 @@ module ReservationStation(
                 rob_id[i] <= 0;
                 imm[i] <= 0;
             end
-        end else if (!rdy_in) begin  // skip
-        end else if (flush) begin  // flush
-        // TODO
-        end else begin
+        end else if (rdy_in) begin
             // insert
             if (dec_rdy) begin
                 present[empty_pos] <= 1;

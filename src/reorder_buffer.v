@@ -8,9 +8,12 @@ module ReorderBuffer(
     output dec_full,
     output dec_empty_id,
     input dec_rdy,
+    input dec_committable,
+    input [31:0] dec_res,
     input [`ROB_TYPE_WIDTH-1:0] dec_type,
     input [`REG_WIDTH-1:0] dec_dest,
-    input [31:0] dec_inst_addr,
+    input [31:0] dec_next_addr,
+    input [31:0] dec_jump_addr,
     input dec_predict,
 // flush when prediction is wrong
     output flush,
@@ -37,16 +40,19 @@ module ReorderBuffer(
     input rs_rdy,
     input [`ROB_WIDTH-1:0] rs_rob_id,
     input [31:0] rs_data,
+    input rs_set_jump_addr,
 // commit info to load store buffer (to ensure store instructions are committed in order)
     output commit_empty,
     output [`ROB_WIDTH-1:0] commit_current_rob_id
 );
     reg[`ROB_WIDTH-1:0] head, tail;
     reg present[0:`ROB_SIZE-1];
-    reg ready[0:`ROB_SIZE-1];
+    reg committable[0:`ROB_SIZE-1];
+    reg [31:0] res[0:`ROB_SIZE-1];
     reg [`ROB_TYPE_WIDTH-1:0] type[0:`ROB_SIZE-1];
-    reg [31:0] inst_res[0:`ROB_SIZE-1];
-    reg [`REG_WIDTH-1:0] inst_dest[0:`ROB_SIZE-1];
+    reg [`REG_WIDTH-1:0] dest[0:`ROB_SIZE-1];
     reg [31:0] inst_addr[0:`ROB_SIZE-1];
+    reg [31:0] next_addr[0:`ROB_SIZE-1];
+    reg [31:0] jump_addr[0:`ROB_SIZE-1];
     reg predict[0:`ROB_SIZE-1];
 endmodule
