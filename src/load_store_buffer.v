@@ -25,7 +25,6 @@ module LoadStoreBuffer(
     input [`ROB_WIDTH-1:0] dec_rob_id,
     input [31:0] dec_imm,
 // data to reorder buffer
-    input rob_en,
     output rob_rdy,
     output [`ROB_WIDTH-1:0] rob_rob_id,
     output [31:0] rob_data,
@@ -42,10 +41,11 @@ module LoadStoreBuffer(
     output [31:0] broadcast_rob_id,
     output [31:0] broadcast_data,
 // commit info from reorder buffer (to ensure store instructions are executed in order)
-    input commit_empty,
-    input[`ROB_WIDTH-1:0] commit_current_rob_id
+    input commit_info_empty,
+    input [`ROB_WIDTH-1:0] commit_info_current_rob_id
 );
-    reg[`LSB_WIDTH-1:0] head, tail;
+    reg[`LSB_WIDTH-1:0] head;
+    reg[`LSB_WIDTH-1:0] tail;
     reg present[0:`LSB_SIZE-1];
     reg [`LSB_TYPE_WIDTH-1:0] type[0:`LSB_SIZE-1];
     reg [31:0] data_j[0:`LSB_SIZE-1];

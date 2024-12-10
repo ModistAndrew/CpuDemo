@@ -2,9 +2,9 @@
 // store and execute instructions
 // find the nearest executable instruction and execute it
 module ReservationStation(
-    input wire clk_in,
-    input wire rst_in,
-    input wire rdy_in,
+    input clk_in,
+    input rst_in,
+    input rdy_in,
     input flush,
 // instruction from decoder
     output dec_full,
@@ -19,14 +19,13 @@ module ReservationStation(
     input [`ROB_WIDTH-1:0] dec_rob_id,
     input [31:0] dec_imm,
 // data to reorder buffer
-    input rob_en,
     output rob_rdy,
     output [`ROB_WIDTH-1:0] rob_rob_id,
     output [31:0] rob_data,
     output rob_set_jump_addr,
 // data from alu
     output alu_en,
-    output [31:0] alu_rob_id_in,
+    output [31:0] alu_rob_id,
     output [31:0] alu_data_j,
     output [31:0] alu_data_k,
     output [31:0] alu_imm,
@@ -96,7 +95,7 @@ module ReservationStation(
     assign rob_data = alu_result;
     assign rob_set_jump_addr = alu_set_jump_addr;
     assign alu_en = executable;
-    assign alu_rob_id_in = rob_id[executable_pos];
+    assign alu_rob_id = rob_id[executable_pos];
     assign alu_data_j = data_j[executable_pos];
     assign alu_data_k = data_k[executable_pos];
     assign alu_imm = imm[executable_pos];

@@ -1,6 +1,6 @@
 `define ROB_SIZE 16
 `define ROB_WIDTH 4
-`define ROB_TYPE_WIDTH 2
+`define ROB_TYPE_WIDTH 2 // STORE, REG, BRANCH, JALR
 `define LSB_SIZE 8
 `define LSB_WIDTH 3
 `define LSB_TYPE_WIDTH 4

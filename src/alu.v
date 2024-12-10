@@ -7,7 +7,7 @@ module Alu(
     input rdy_in,
     input flush,
     input en,
-    input [31:0] rob_id_in,
+    input [31:0] rob_id,
     input [31:0] data_j,
     input [31:0] data_k,
     input [31:0] imm,
@@ -27,7 +27,7 @@ module Alu(
             result <= 0;
             set_jump_addr <= 0;
         end else if (rdy_in) begin
-            rob_id_out <= rob_id_in;
+            rob_id_out <= rob_id;
             rdy <= en;
             set_jump_addr <= type[5] && type[4];
             if (type[5]) begin

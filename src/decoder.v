@@ -13,7 +13,7 @@ module Decoder (
     input [31:0] mc_data,
     // instruction to reorder buffer
     input rob_full,
-    input rob_empty_id,  // use rob index to look up
+    input [`ROB_WIDTH-1:0] rob_empty_id,  // use rob index to look up
     output rob_rdy,
     output reg rob_committable,
     output reg [31:0] rob_res,
@@ -107,13 +107,12 @@ module Decoder (
     // COMMIT
     wire full = rob_full || (need_rs && rs_full) || (!need_rs && lsb_full);
     wire [31:0] jump_pc = pc + pc_offset;
-// output
+
     wire pending_j = need_j && reg_pending_j;
     wire pending_k = need_k && reg_pending_k;
-
+// output
     assign mc_en = state == FETCH;
     assign mc_addr = pc;
-
     assign rob_rdy = rdy;
     assign rob_dest = dest;
     assign rob_predict = predict;
@@ -171,6 +170,8 @@ module Decoder (
                 end
                 DECODE: begin // use a tick to decode and do prediction
                     rs_type <= {opcode==BRANCH || opcode==JALR, opcode==ARITH_IMM || opcode==JALR, funct3, funct7[5]};
+                    rob_type <= {opcode==JALR || opcode==BRANCH, 
+                    opcode==LUI || opcode==AUIPC || opcode==JAL || opcode==JALR || opcode==ARITH_IMM || opcode==ARITH_REG || opcode==LOAD};
                     case (opcode)  // TODO: specify rob_type, rs_type and lsb_type
                         LUI: begin
                             need_rs  <= 0;
