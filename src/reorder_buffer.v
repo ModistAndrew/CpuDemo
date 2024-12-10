@@ -55,11 +55,11 @@ module ReorderBuffer(
     reg [31:0] next_addr[0:`ROB_SIZE-1];
     reg [31:0] jump_addr[0:`ROB_SIZE-1];
     reg predict[0:`ROB_SIZE-1];
-
 // wires
-    wire commit_en = present[head] && committable[head] && type[head][0]; // only REG or JALR needs to commit to register file
-    wire [31:0] commit_res = res[head];
     wire [`ROB_TYPE_WIDTH-1:0] commit_type = type[head];
+    wire commit_en = present[head] && committable[head]; 
+    wire commit_to_reg_en = commit_en && commit_type[0]; // only REG or JALR needs to commit to register file
+    wire [31:0] commit_res = res[head];
     wire commit_next_addr = next_addr[head];
     wire commit_jump_addr = jump_addr[head];
     wire commit_predict = predict[head];
@@ -79,7 +79,7 @@ module ReorderBuffer(
     assign reg_ready_k = search_committable_k || rs_meet_k || lsb_meet_k || dec_meet_k;
     assign reg_data_j = dec_meet_j ? dec_res : lsb_meet_j ? lsb_data : rs_meet_j ? rs_data : res[reg_rob_id_j];
     assign reg_data_k = dec_meet_k ? dec_res : lsb_meet_k ? lsb_data : rs_meet_k ? rs_data : res[reg_rob_id_k];
-    assign commit_reg_id = commit_en ? dest[head] : 0;
+    assign commit_reg_id = commit_to_reg_en ? dest[head] : 0;
     assign commit_data = res[head];
     assign commit_rob_id = head; // use combinational logic here as JALR must be committed immediately (flush will be issued in the next cycle)
     assign commit_info_empty = !present[head];

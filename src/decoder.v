@@ -61,7 +61,6 @@ module Decoder (
     output [`REG_WIDTH-1:0] pending_mark_reg_id,
     output [`ROB_WIDTH-1:0] pending_mark_rob_id
 );
-// state and other variables
     localparam FETCH = 0;
     localparam DECODE = 1;
     localparam COMMIT = 2;
@@ -172,7 +171,8 @@ module Decoder (
                     rs_type <= {opcode==BRANCH || opcode==JALR, opcode==ARITH_IMM || opcode==JALR, funct3, funct7[5]};
                     rob_type <= {opcode==JALR || opcode==BRANCH, 
                     opcode==LUI || opcode==AUIPC || opcode==JAL || opcode==JALR || opcode==ARITH_IMM || opcode==ARITH_REG || opcode==LOAD};
-                    case (opcode)  // TODO: specify rob_type, rs_type and lsb_type
+                    lsb_type <= {opcode==LOAD, funct3};
+                    case (opcode)
                         LUI: begin
                             need_rs  <= 0;
                             need_lsb <= 0;

@@ -1,3 +1,4 @@
+`include "params.v"
 // manage memory access from load store buffer and decoder
 // input: enable and address should be kept valid until rdy is high. after that, data can change
 // output: rdy is high and data is valid at exactly the same time

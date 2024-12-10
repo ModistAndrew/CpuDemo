@@ -47,7 +47,6 @@ module ReservationStation(
     output [31:0] broadcast_rob_id,
     output [31:0] broadcast_data
 );
-// variables
     reg present[0:`RS_SIZE-1];
     reg [`RS_TYPE_WIDTH-1:0] type[0:`RS_SIZE-1];
     reg [31:0] data_j[0:`RS_SIZE-1];
@@ -83,7 +82,7 @@ module ReservationStation(
     wire executable = executable_tree[1];
     wire [`RS_WIDTH-1:0] empty_pos = empty_pos_tree[1];
     wire [`RS_WIDTH-1:0] executable_pos = executable_pos_tree[1];
-    // combine input
+    
     wire rs_broadcast_meet_insert_j = rs_broadcast_en && rs_broadcast_rob_id == dec_dependency_j;
     wire lsb_broadcast_meet_insert_j = lsb_broadcast_en && lsb_broadcast_rob_id == dec_dependency_j;
     wire rs_broadcast_meet_insert_k = rs_broadcast_en && rs_broadcast_rob_id == dec_dependency_k;
@@ -124,8 +123,8 @@ module ReservationStation(
             if (dec_rdy) begin
                 present[empty_pos] <= 1;
                 type[empty_pos] <= dec_type;
-                data_j[empty_pos] <= !dec_pending_j ? dec_data_j : rs_broadcast_meet_insert_j ? rs_broadcast_data : lsb_broadcast_meet_insert_j ? lsb_broadcast_data : 0;
-                data_k[empty_pos] <= !dec_pending_k ? dec_data_k : rs_broadcast_meet_insert_k ? rs_broadcast_data : lsb_broadcast_meet_insert_k ? lsb_broadcast_data : 0;
+                data_j[tail] <= !dec_pending_j ? dec_data_j : rs_broadcast_meet_insert_j ? rs_broadcast_data : lsb_broadcast_data;
+                data_k[tail] <= !dec_pending_k ? dec_data_k : rs_broadcast_meet_insert_k ? rs_broadcast_data : lsb_broadcast_data;
                 pending_j[empty_pos] <= dec_pending_j && !rs_broadcast_meet_insert_j && !lsb_broadcast_meet_insert_j;
                 pending_k[empty_pos] <= dec_pending_k && !rs_broadcast_meet_insert_k && !lsb_broadcast_meet_insert_k;
                 dependency_j[empty_pos] <= dec_dependency_j;
@@ -154,7 +153,7 @@ module ReservationStation(
                     end
                 end
             end
-            if (executable) begin
+            if (executable) begin // remove the instruction from rs; alu read the data in the same cycle and output in the next cycle
                 present[executable_pos] <= 0;
             end
         end

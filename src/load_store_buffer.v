@@ -1,3 +1,4 @@
+`include "params.v"
 // store and execute load and store instructions
 // check the head: if load, execute; if store, wait for commit
 module LoadStoreBuffer(
@@ -56,4 +57,84 @@ module LoadStoreBuffer(
     reg [`ROB_WIDTH-1:0] dependency_k[0:`LSB_SIZE-1];
     reg [`ROB_WIDTH-1:0] rob_id[0:`LSB_SIZE-1];
     reg [31:0] imm[0:`LSB_SIZE-1];
+// wires
+    wire rs_broadcast_meet_insert_j = rs_broadcast_en && rs_broadcast_rob_id == dec_dependency_j;
+    wire lsb_broadcast_meet_insert_j = lsb_broadcast_en && lsb_broadcast_rob_id == dec_dependency_j;
+    wire rs_broadcast_meet_insert_k = rs_broadcast_en && rs_broadcast_rob_id == dec_dependency_k;
+    wire lsb_broadcast_meet_insert_k = lsb_broadcast_en && lsb_broadcast_rob_id == dec_dependency_k;
+
+    wire head_type = type[head];
+    wire head_rob_id = rob_id[head];
+// output
+    assign mc_en = present[head] && !pending_j[head] && !pending_k[head] && 
+    (head_type[3] || !commit_info_empty && commit_info_current_rob_id == head); // if store, wait for commit
+    assign mc_addr = data_j[head] + imm[head];
+    assign mc_type = head_type;
+    assign mc_write_data = data_k[head];
+    assign dec_full = head == tail && present[head];
+    assign rob_rdy = mc_rdy;
+    assign rob_rob_id = head_rob_id;
+    assign rob_data = mc_read_data;
+    assign broadcast_en = mc_rdy;
+    assign broadcast_rob_id = head_rob_id;
+    assign broadcast_data = mc_read_data;
+// cycle
+    always @(posedge clk_in) begin: Main
+        integer i;
+        if (rst_in || flush && rdy_in) begin
+            head <= 0;
+            tail <= 0;
+            for (i = 0; i < `LSB_SIZE; i = i + 1) begin
+                present[i] <= 0;
+                type[i] <= 0;
+                data_j[i] <= 0;
+                data_k[i] <= 0;
+                pending_j[i] <= 0;
+                pending_k[i] <= 0;
+                dependency_j[i] <= 0;
+                dependency_k[i] <= 0;
+                rob_id[i] <= 0;
+                imm[i] <= 0;
+            end
+        end else if (rdy_in) begin
+            // insert
+            if (dec_rdy) begin
+                present[tail] <= 1;
+                type[tail] <= dec_type;
+                data_j[tail] <= !dec_pending_j ? dec_data_j : rs_broadcast_meet_insert_j ? rs_broadcast_data : lsb_broadcast_data;
+                data_k[tail] <= !dec_pending_k ? dec_data_k : rs_broadcast_meet_insert_k ? rs_broadcast_data : lsb_broadcast_data;
+                pending_j[tail] <= dec_pending_j && !rs_broadcast_meet_insert_j && !lsb_broadcast_meet_insert_j;
+                pending_k[tail] <= dec_pending_k && !rs_broadcast_meet_insert_k && !lsb_broadcast_meet_insert_k;
+                dependency_j[tail] <= dec_dependency_j;
+                dependency_k[tail] <= dec_dependency_k;
+                rob_id[tail] <= dec_rob_id;
+                imm[tail] <= dec_imm;
+            end
+            // update
+            for (i = 0; i < `LSB_SIZE; i = i + 1) begin
+                if (pending_j[i]) begin
+                    if (rs_broadcast_en && rs_broadcast_rob_id == dependency_j[i]) begin
+                        data_j[i] <= rs_broadcast_data;
+                        pending_j[i] <= 0;
+                    end else if (lsb_broadcast_en && lsb_broadcast_rob_id == dependency_j[i]) begin
+                        data_j[i] <= lsb_broadcast_data;
+                        pending_j[i] <= 0;
+                    end
+                end
+                if (pending_k[i]) begin
+                    if (rs_broadcast_en && rs_broadcast_rob_id == dependency_k[i]) begin
+                        data_k[i] <= rs_broadcast_data;
+                        pending_k[i] <= 0;
+                    end else if (lsb_broadcast_en && lsb_broadcast_rob_id == dependency_k[i]) begin
+                        data_k[i] <= lsb_broadcast_data;
+                        pending_k[i] <= 0;
+                    end
+                end
+            end
+            if (mc_rdy) begin
+                head <= head + 1;
+                present[head] <= 0;
+            end
+        end
+    end
 endmodule
