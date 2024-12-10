@@ -11,7 +11,7 @@ module Alu(
     input [31:0] data_j,
     input [31:0] data_k,
     input [31:0] imm,
-    input [`RS_TYPE_WIDTH-1:0] type, // type in reservation station
+    input [`RS_TYPE_WIDTH-1:0] type, // type as in reservation station
     output reg rdy, // simply cache en for the next cycle
     output reg [31:0] rob_id_out, // simply cache rob_id_in for the next cycle
     output reg [31:0] result,

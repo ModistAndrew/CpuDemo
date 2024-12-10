@@ -63,11 +63,11 @@ module LoadStoreBuffer(
     wire rs_broadcast_meet_insert_k = rs_broadcast_en && rs_broadcast_rob_id == dec_dependency_k;
     wire lsb_broadcast_meet_insert_k = lsb_broadcast_en && lsb_broadcast_rob_id == dec_dependency_k;
 
-    wire head_type = type[head];
+    wire [`LSB_TYPE_WIDTH-1:0] head_type = type[head];
     wire head_rob_id = rob_id[head];
 // output
-    assign mc_en = present[head] && !pending_j[head] && !pending_k[head] && 
-    (head_type[3] || !commit_info_empty && commit_info_current_rob_id == head); // if store, wait for commit
+    assign mc_en = present[head] && !pending_j[head] && !pending_k[head] &&
+    (!head_type[3] || !commit_info_empty && commit_info_current_rob_id == head); // if store, wait for commit
     assign mc_addr = data_j[head] + imm[head];
     assign mc_type = head_type;
     assign mc_write_data = data_k[head];

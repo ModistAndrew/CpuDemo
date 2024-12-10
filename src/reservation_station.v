@@ -123,8 +123,8 @@ module ReservationStation(
             if (dec_rdy) begin
                 present[empty_pos] <= 1;
                 type[empty_pos] <= dec_type;
-                data_j[tail] <= !dec_pending_j ? dec_data_j : rs_broadcast_meet_insert_j ? rs_broadcast_data : lsb_broadcast_data;
-                data_k[tail] <= !dec_pending_k ? dec_data_k : rs_broadcast_meet_insert_k ? rs_broadcast_data : lsb_broadcast_data;
+                data_j[empty_pos] <= !dec_pending_j ? dec_data_j : rs_broadcast_meet_insert_j ? rs_broadcast_data : lsb_broadcast_data;
+                data_k[empty_pos] <= !dec_pending_k ? dec_data_k : rs_broadcast_meet_insert_k ? rs_broadcast_data : lsb_broadcast_data;
                 pending_j[empty_pos] <= dec_pending_j && !rs_broadcast_meet_insert_j && !lsb_broadcast_meet_insert_j;
                 pending_k[empty_pos] <= dec_pending_k && !rs_broadcast_meet_insert_k && !lsb_broadcast_meet_insert_k;
                 dependency_j[empty_pos] <= dec_dependency_j;

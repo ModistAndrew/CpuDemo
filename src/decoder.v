@@ -171,7 +171,7 @@ module Decoder (
                     rs_type <= {opcode==BRANCH || opcode==JALR, opcode==ARITH_IMM || opcode==JALR, funct3, funct7[5]};
                     rob_type <= {opcode==JALR || opcode==BRANCH, 
                     opcode==LUI || opcode==AUIPC || opcode==JAL || opcode==JALR || opcode==ARITH_IMM || opcode==ARITH_REG || opcode==LOAD};
-                    lsb_type <= {opcode==LOAD, funct3};
+                    lsb_type <= {opcode==STORE, funct3};
                     case (opcode)
                         LUI: begin
                             need_rs  <= 0;
