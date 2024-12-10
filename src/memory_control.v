@@ -47,7 +47,7 @@ module MemoryControl (
     wire lsb_larger_than_byte = lsb_type[1] || lsb_type[0];
     wire lsb_larger_than_half = lsb_type[1];
     wire lsb_sign_extend = lsb_type[2];
-    wire [31:0] mem_dout_signed ={{24{mem_dout[7] && lsb_sign_extend}}, mem_dout};
+    wire [31:0] mem_dout_extended = {{24{mem_dout[7] && lsb_sign_extend}}, mem_dout};
 // output
     assign dec_data = current_data;
     assign lsb_read_data = current_data;
@@ -81,21 +81,21 @@ module MemoryControl (
                 end
                 DECODER_1: begin
                     state <= DECODER_2;
-                    current_data <= mem_dout;
+                    current_data <= mem_dout_extended;
                     mem_a <= mem_a + 1;
                 end
                 DECODER_2: begin
                     state <= DECODER_3;
-                    current_data <= {mem_dout[23:0], current_data[7:0]};
+                    current_data <= {mem_dout_extended[23:0], current_data[7:0]};
                     mem_a <= mem_a + 1;
                 end
                 DECODER_3: begin
                     state <= DECODER_4;
-                    current_data <= {mem_dout[15:0], current_data[15:0]};
+                    current_data <= {mem_dout_extended[15:0], current_data[15:0]};
                 end
                 DECODER_4: begin
                     state <= COOLDOWN;
-                    current_data <= {mem_dout[7:0], current_data[31:0]};
+                    current_data <= {mem_dout_extended[7:0], current_data[31:0]};
                     rdy <= 1;
                 end
                 LSB_0: begin
@@ -106,7 +106,7 @@ module MemoryControl (
                 end
                 LSB_1: begin
                     state <= lsb_larger_than_byte ? LSB_2 : COOLDOWN;
-                    current_data <= mem_dout_signed;
+                    current_data <= mem_dout_extended;
                     rdy <= !lsb_larger_than_byte;
                     mem_dout <= lsb_write_data[23:16];
                     mem_a <= mem_a + 1;
@@ -114,19 +114,19 @@ module MemoryControl (
                 end
                 LSB_2: begin
                     state <= lsb_larger_than_half ? LSB_3 : COOLDOWN;
-                    current_data <= {mem_dout_signed[23:0], current_data[7:0]};
+                    current_data <= {mem_dout_extended[23:0], current_data[7:0]};
                     rdy <= !lsb_larger_than_half;
                     mem_dout <= lsb_write_data[31:24];
                     mem_a <= mem_a + 1;
                 end
                 LSB_3: begin
                     state <= LSB_4;
-                    current_data <= {mem_dout_signed[15:0], current_data[15:0]};
+                    current_data <= {mem_dout_extended[15:0], current_data[15:0]};
                     mem_wr <= 0;
                 end
                 LSB_4: begin
                     state <= COOLDOWN;
-                    current_data <= {mem_dout_signed[7:0], current_data[23:0]};
+                    current_data <= {mem_dout_extended[7:0], current_data[23:0]};
                     rdy <= 1;
                 end
                 COOLDOWN: begin // wait for rdy to go low
