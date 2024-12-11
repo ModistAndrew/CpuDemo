@@ -58,12 +58,13 @@ module ReorderBuffer(
 // wires
     wire [`ROB_TYPE_WIDTH-1:0] commit_type = type[head];
     wire commit_en = present[head] && committable[head]; 
-    wire commit_to_reg_en = commit_en && commit_type[0]; // only REG or JALR needs to commit to register file
     wire [31:0] commit_res = res[head];
-    wire commit_next_addr = next_addr[head];
-    wire commit_jump_addr = jump_addr[head];
+    wire [31:0] commit_next_addr = next_addr[head];
+    wire [31:0] commit_jump_addr = jump_addr[head];
     wire commit_predict = predict[head];
+    wire prediction_wrong = commit_type[1] && (commit_type[0] || commit_predict ^ commit_res[0]); // BRANCH && (JALR || prediction is wrong)
 
+    wire commit_to_reg_en = commit_en && commit_type[0]; // only REG or JALR needs to commit to register file
     wire search_committable_j = committable[reg_rob_id_j];
     wire search_committable_k = committable[reg_rob_id_k];
     wire rs_meet_j = rs_rdy && rs_rob_id == reg_rob_id_j;
@@ -132,14 +133,9 @@ module ReorderBuffer(
             if (commit_en) begin
                 head <= head + 1;
                 present[head] <= 0;
-                if (commit_type[1]) begin // BRANCH OR JALR (REG is done by wire)
-                    if (commit_type[0]) begin // JALR
-                        flush_out <= 1;
-                        predict_correct_pc <= commit_jump_addr;
-                    end else if (commit_predict ^ commit_res[0]) begin // BRANCH prediction is wrong
-                        flush_out <= 1;
-                        predict_correct_pc <= commit_res[0] ? commit_jump_addr : commit_next_addr;
-                    end
+                if (prediction_wrong) begin
+                    flush_out <= 1;
+                    predict_correct_pc <= commit_predict ? commit_next_addr : commit_jump_addr; // choose opposite prediction
                 end
             end
         end

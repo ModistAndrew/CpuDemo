@@ -135,7 +135,7 @@ module Decoder (
     assign lsb_imm = imm_data;
     assign reg_reg_id_j = reg_id_j;
     assign reg_reg_id_k = reg_id_k;
-    assign pending_mark_reg_id = rdy ? dest : 0;
+    assign pending_mark_reg_id = rdy && rob_type[0] ? dest : 0; // only mark when committable to reg
     assign pending_mark_rob_id = rob_empty_id;
 // cycle
     always @(posedge clk_in) begin
@@ -163,11 +163,13 @@ module Decoder (
                 FETCH: begin  // wait for memory to be ready
                     rdy <= 0;
                     if (mc_rdy) begin
-                        inst  <= mc_data;
                         state <= DECODE;
+                        inst  <= mc_data;
                     end
                 end
                 DECODE: begin // use a tick to decode and do prediction
+                // TODO: nop
+                    state <= COMMIT;
                     rs_type <= {opcode==BRANCH || opcode==JALR, opcode==ARITH_IMM || opcode==JALR, funct3, funct7[5]};
                     rob_type <= {opcode==JALR || opcode==BRANCH, 
                     opcode==LUI || opcode==AUIPC || opcode==JAL || opcode==JALR || opcode==ARITH_IMM || opcode==ARITH_REG || opcode==LOAD};
@@ -259,11 +261,11 @@ module Decoder (
                 end
                 COMMIT: begin  // commit when ready and use prediction to update pc
                     if (!full) begin
+                        state <= FETCH;
                         rdy <= 1;
                         rob_next_addr <= next_pc;
                         rob_jump_addr <= jump_pc; // have to use buffer as pc is updated in the next cycle
                         pc <= predict ? jump_pc : next_pc;
-                        state <= FETCH;
                     end
                 end
             endcase

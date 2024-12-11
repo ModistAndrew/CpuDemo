@@ -31,22 +31,22 @@ module LoadStoreBuffer(
     output [31:0] rob_data,
 // broadcast from rs
     input rs_broadcast_en,
-    input [31:0] rs_broadcast_rob_id,
+    input [`ROB_WIDTH-1:0] rs_broadcast_rob_id,
     input [31:0] rs_broadcast_data,
 // broadcast from lsb
     input lsb_broadcast_en,
-    input [31:0] lsb_broadcast_rob_id,
+    input [`ROB_WIDTH-1:0] lsb_broadcast_rob_id,
     input [31:0] lsb_broadcast_data,
 // broadcast to rs and lsb
     output broadcast_en,
-    output [31:0] broadcast_rob_id,
+    output [`ROB_WIDTH-1:0] broadcast_rob_id,
     output [31:0] broadcast_data,
 // commit info from reorder buffer (to ensure store instructions are executed in order)
     input commit_info_empty,
     input [`ROB_WIDTH-1:0] commit_info_current_rob_id
 );
-    reg[`LSB_WIDTH-1:0] head;
-    reg[`LSB_WIDTH-1:0] tail;
+    reg [`LSB_WIDTH-1:0] head;
+    reg [`LSB_WIDTH-1:0] tail;
     reg present[0:`LSB_SIZE-1];
     reg [`LSB_TYPE_WIDTH-1:0] type[0:`LSB_SIZE-1];
     reg [31:0] data_j[0:`LSB_SIZE-1];
@@ -64,14 +64,17 @@ module LoadStoreBuffer(
     wire lsb_broadcast_meet_insert_k = lsb_broadcast_en && lsb_broadcast_rob_id == dec_dependency_k;
 
     wire [`LSB_TYPE_WIDTH-1:0] head_type = type[head];
-    wire head_rob_id = rob_id[head];
+    wire [`ROB_WIDTH-1:0] head_rob_id = rob_id[head];
+    wire head_present = present[head];
+    wire head_pending_j = pending_j[head];
+    wire head_pending_k = pending_k[head];
 // output
-    assign mc_en = present[head] && !pending_j[head] && !pending_k[head] &&
-    (!head_type[3] || !commit_info_empty && commit_info_current_rob_id == head); // if store, wait for commit
+    assign mc_en = head_present && !head_pending_j && !head_pending_k &&
+    (!head_type[3] || !commit_info_empty && commit_info_current_rob_id == head_rob_id); // if store, wait for commit
     assign mc_addr = data_j[head] + imm[head];
     assign mc_type = head_type;
     assign mc_write_data = data_k[head];
-    assign dec_full = head == tail && present[head];
+    assign dec_full = head == tail && head_present;
     assign rob_rdy = mc_rdy;
     assign rob_rob_id = head_rob_id;
     assign rob_data = mc_read_data;
@@ -99,6 +102,7 @@ module LoadStoreBuffer(
         end else if (rdy_in) begin
             // insert
             if (dec_rdy) begin
+                tail <= tail + 1;
                 present[tail] <= 1;
                 type[tail] <= dec_type;
                 data_j[tail] <= !dec_pending_j ? dec_data_j : rs_broadcast_meet_insert_j ? rs_broadcast_data : lsb_broadcast_data;

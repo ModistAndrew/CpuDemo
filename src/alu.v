@@ -7,13 +7,13 @@ module Alu(
     input rdy_in,
     input flush,
     input en,
-    input [31:0] rob_id,
+    input [`ROB_WIDTH-1:0] rob_id,
     input [31:0] data_j,
     input [31:0] data_k,
     input [31:0] imm,
     input [`RS_TYPE_WIDTH-1:0] type, // type as in reservation station
     output reg rdy, // simply cache en for the next cycle
-    output reg [31:0] rob_id_out, // simply cache rob_id_in for the next cycle
+    output reg [`ROB_WIDTH-1:0] rob_id_out, // simply cache rob_id_in for the next cycle
     output reg [31:0] result,
     output reg set_jump_addr // for JALR
 );
@@ -45,7 +45,7 @@ module Alu(
                 end
             end else begin
                 case (type[3:1])
-                    3'b000: result <= type[0] ? data_j - k_or_imm : data_j + k_or_imm;
+                    3'b000: result <= type[0] && !type[4] ? data_j - k_or_imm : data_j + k_or_imm; // imm does not have subtraction
                     3'b001: result <= data_j << k_or_imm[4:0];
                     3'b010: result <= $signed(data_j) < $signed(k_or_imm);
                     3'b011: result <= data_j < k_or_imm;

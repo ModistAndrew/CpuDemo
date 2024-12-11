@@ -34,23 +34,21 @@ module RegisterFile(
     reg pending[0:`REG_SIZE-1];
     reg [`ROB_WIDTH-1:0] dependency[0:`REG_SIZE-1];
 // wires
-    wire commit_rdy = commit_reg_id != 0;
-    wire pending_mark_rdy = pending_mark_reg_id != 0;
     wire search_pending_j = pending[dec_reg_id_j];
     wire search_pending_k = pending[dec_reg_id_k];
     wire [`ROB_WIDTH-1:0] search_dependency_j = dependency[dec_reg_id_j];
     wire [`ROB_WIDTH-1:0] search_dependency_k = dependency[dec_reg_id_k];
-    wire commit_meet_search_j = commit_rdy && commit_reg_id == dec_reg_id_j;
-    wire commit_meet_search_k = commit_rdy && commit_reg_id == dec_reg_id_k;
 // output
     assign rob_rob_id_j = search_dependency_j;
     assign rob_rob_id_k = search_dependency_k;
-    assign dec_data_j = commit_meet_search_j ? commit_data : rob_ready_j ? rob_data_j : data[dec_reg_id_j];
-    assign dec_data_k = commit_meet_search_k ? commit_data : rob_ready_k ? rob_data_k : data[dec_reg_id_k];
-    assign dec_pending_j = search_pending_j && !rob_ready_j && !commit_meet_search_j;
-    assign dec_pending_k = search_pending_k && !rob_ready_k && !commit_meet_search_k;
+    assign dec_data_j = search_pending_j ? rob_data_j : data[dec_reg_id_j];
+    assign dec_data_k = search_pending_k ? rob_data_k : data[dec_reg_id_k];
+    assign dec_pending_j = search_pending_j && !rob_ready_j;
+    assign dec_pending_k = search_pending_k && !rob_ready_k;
     assign dec_dependency_j = search_dependency_j;
     assign dec_dependency_k = search_dependency_k;
+    // don't have to deal with commit here as rob data is still valid when commit
+    // also, don't have to deal with pending mark here: pending mark should take effect in the next cycle
 // cycle
     always @(posedge clk_in) begin: Main
         integer i;
@@ -63,17 +61,49 @@ module RegisterFile(
                 end
             end
         end else if (rdy_in) begin
-            if (commit_rdy) begin
+            if (commit_reg_id != 0) begin
                 data[commit_reg_id] <= commit_data;
                 // if mark pending at the same time, do not clear
                 if (dependency[commit_reg_id] == commit_rob_id && commit_reg_id != pending_mark_reg_id) begin
                     pending[commit_reg_id] <= 0;
                 end
             end
-            if (pending_mark_rdy) begin
+            if (pending_mark_reg_id != 0) begin
                 pending[pending_mark_reg_id] <= 1;
                 dependency[pending_mark_reg_id] <= pending_mark_rob_id;
             end
         end
     end
+    wire [31:0] zero = data[0];
+    wire [31:0] ra = data[1];
+    wire [31:0] sp = data[2];
+    wire [31:0] gp = data[3];
+    wire [31:0] tp = data[4];
+    wire [31:0] t0 = data[5];
+    wire [31:0] t1 = data[6];
+    wire [31:0] t2 = data[7];
+    wire [31:0] s0 = data[8];
+    wire [31:0] s1 = data[9];
+    wire [31:0] a0 = data[10];
+    wire [31:0] a1 = data[11];
+    wire [31:0] a2 = data[12];
+    wire [31:0] a3 = data[13];
+    wire [31:0] a4 = data[14];
+    wire [31:0] a5 = data[15];
+    wire [31:0] a6 = data[16];
+    wire [31:0] a7 = data[17];
+    wire [31:0] s2 = data[18];
+    wire [31:0] s3 = data[19];
+    wire [31:0] s4 = data[20];
+    wire [31:0] s5 = data[21];
+    wire [31:0] s6 = data[22];
+    wire [31:0] s7 = data[23];
+    wire [31:0] s8 = data[24];
+    wire [31:0] s9 = data[25];
+    wire [31:0] s10 = data[26];
+    wire [31:0] s11 = data[27];
+    wire [31:0] t3 = data[28];
+    wire [31:0] t4 = data[29];
+    wire [31:0] t5 = data[30];
+    wire [31:0] t6 = data[31];
 endmodule

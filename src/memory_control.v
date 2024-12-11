@@ -16,14 +16,14 @@ module MemoryControl (
 // memory data to decoder
     input dec_en,
     input [31:0] dec_addr,
-    output dec_rdy,
+    output reg dec_rdy,
     output [31:0] dec_data,
 // memory data from/to load store buffer
     input lsb_en,
     input [31:0] lsb_addr,
     input [`LSB_TYPE_WIDTH-1:0] lsb_type, // type as in load store buffer
     input [31:0] lsb_write_data,
-    output lsb_rdy,
+    output reg lsb_rdy,
     output [31:0] lsb_read_data
 );
     localparam SELECT = 0;
@@ -41,24 +41,22 @@ module MemoryControl (
     reg [3:0] state;
 // buffer
     reg [31:0] current_data;
-    reg rdy;
 // wires
     wire lsb_wr = lsb_type[3];
     wire lsb_larger_than_byte = lsb_type[1] || lsb_type[0];
     wire lsb_larger_than_half = lsb_type[1];
     wire lsb_sign_extend = lsb_type[2];
-    wire [31:0] mem_dout_extended = {{24{mem_dout[7] && lsb_sign_extend}}, mem_dout};
+    wire [31:0] mem_din_extended = {{24{mem_din[7] && lsb_sign_extend}}, mem_din};
 // output
     assign dec_data = current_data;
     assign lsb_read_data = current_data;
-    assign dec_rdy = rdy;
-    assign lsb_rdy = rdy;
 // cycle
     always @(posedge clk_in) begin
         if (rst_in || flush && rdy_in) begin
             state <= SELECT;
             current_data <= 0;
-            rdy <= 0;
+            dec_rdy <= 0;
+            lsb_rdy <= 0;
             mem_dout <= 0;
             mem_a <= 0;
             mem_wr <= 0;
@@ -81,57 +79,58 @@ module MemoryControl (
                 end
                 DECODER_1: begin
                     state <= DECODER_2;
-                    current_data <= mem_dout_extended;
+                    current_data <= mem_din_extended;
                     mem_a <= mem_a + 1;
                 end
                 DECODER_2: begin
                     state <= DECODER_3;
-                    current_data <= {mem_dout_extended[23:0], current_data[7:0]};
+                    current_data <= {mem_din_extended[23:0], current_data[7:0]};
                     mem_a <= mem_a + 1;
                 end
                 DECODER_3: begin
                     state <= DECODER_4;
-                    current_data <= {mem_dout_extended[15:0], current_data[15:0]};
+                    current_data <= {mem_din_extended[15:0], current_data[15:0]};
                 end
                 DECODER_4: begin
                     state <= COOLDOWN;
-                    current_data <= {mem_dout_extended[7:0], current_data[31:0]};
-                    rdy <= 1;
+                    current_data <= {mem_din_extended[7:0], current_data[23:0]};
+                    dec_rdy <= 1;
                 end
                 LSB_0: begin
                     state <= LSB_1;
                     mem_dout <= lsb_write_data[15:8];
                     mem_a <= mem_a + 1;
-                    mem_wr <= lsb_larger_than_byte; // if lsb is larger than byte, continue writing
+                    mem_wr <= mem_wr && lsb_larger_than_byte; // if lsb is larger than byte, continue writing
                 end
                 LSB_1: begin
                     state <= lsb_larger_than_byte ? LSB_2 : COOLDOWN;
-                    current_data <= mem_dout_extended;
-                    rdy <= !lsb_larger_than_byte;
+                    current_data <= mem_din_extended;
+                    lsb_rdy <= !lsb_larger_than_byte;
                     mem_dout <= lsb_write_data[23:16];
                     mem_a <= mem_a + 1;
-                    mem_wr <= lsb_larger_than_half; // if lsb is larger than half, continue writing
+                    mem_wr <= mem_wr && lsb_larger_than_half; // if lsb is larger than half, continue writing
                 end
                 LSB_2: begin
                     state <= lsb_larger_than_half ? LSB_3 : COOLDOWN;
-                    current_data <= {mem_dout_extended[23:0], current_data[7:0]};
-                    rdy <= !lsb_larger_than_half;
+                    current_data <= {mem_din_extended[23:0], current_data[7:0]};
+                    lsb_rdy <= !lsb_larger_than_half;
                     mem_dout <= lsb_write_data[31:24];
                     mem_a <= mem_a + 1;
                 end
                 LSB_3: begin
                     state <= LSB_4;
-                    current_data <= {mem_dout_extended[15:0], current_data[15:0]};
+                    current_data <= {mem_din_extended[15:0], current_data[15:0]};
                     mem_wr <= 0;
                 end
                 LSB_4: begin
                     state <= COOLDOWN;
-                    current_data <= {mem_dout_extended[7:0], current_data[23:0]};
-                    rdy <= 1;
+                    current_data <= {mem_din_extended[7:0], current_data[23:0]};
+                    lsb_rdy <= 1;
                 end
                 COOLDOWN: begin // wait for rdy to go low
                     state <= SELECT;
-                    rdy <= 0;
+                    dec_rdy <= 0;
+                    lsb_rdy <= 0;
                 end
             endcase
         end

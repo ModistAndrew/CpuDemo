@@ -25,26 +25,26 @@ module ReservationStation(
     output rob_set_jump_addr,
 // data from alu
     output alu_en,
-    output [31:0] alu_rob_id,
+    output [`ROB_WIDTH-1:0] alu_rob_id,
     output [31:0] alu_data_j,
     output [31:0] alu_data_k,
     output [31:0] alu_imm,
     output [`RS_TYPE_WIDTH-1:0] alu_type,
     input alu_rdy,
-    input [31:0] alu_rob_id_out,
+    input [`ROB_WIDTH-1:0] alu_rob_id_out,
     input [31:0] alu_result,
     input alu_set_jump_addr,
 // broadcast from rs
     input rs_broadcast_en,
-    input [31:0] rs_broadcast_rob_id,
+    input [`ROB_WIDTH-1:0] rs_broadcast_rob_id,
     input [31:0] rs_broadcast_data,
 // broadcast from lsb
     input lsb_broadcast_en,
-    input [31:0] lsb_broadcast_rob_id,
+    input [`ROB_WIDTH-1:0] lsb_broadcast_rob_id,
     input [31:0] lsb_broadcast_data,
 // broadcast to rs and lsb
     output broadcast_en,
-    output [31:0] broadcast_rob_id,
+    output [`ROB_WIDTH-1:0] broadcast_rob_id,
     output [31:0] broadcast_data
 );
     reg present[0:`RS_SIZE-1];

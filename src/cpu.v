@@ -1,3 +1,4 @@
+`include "params.v"
 // RISCV32 CPU top module
 // port modification allowed for debugging purposes
 module cpu(
@@ -118,20 +119,20 @@ module cpu(
     wire [31:0] rs2rob_data;
     wire rs2rob_set_jump_addr;
     wire rs2alu_en;
-    wire [31:0] rs2alu_rob_id;
+    wire [`ROB_WIDTH-1:0] rs2alu_rob_id;
     wire [31:0] rs2alu_data_j;
     wire [31:0] rs2alu_data_k;
     wire [31:0] rs2alu_imm;
     wire [`RS_TYPE_WIDTH-1:0] rs2alu_type;
     wire alu2rs_rdy;
-    wire [31:0] alu2rs_rob_id_out;
+    wire [`ROB_WIDTH-1:0] alu2rs_rob_id_out;
     wire [31:0] alu2rs_result;
     wire alu2rs_set_jump_addr;
     wire rs_broadcast_en;
-    wire [31:0] rs_broadcast_rob_id;
+    wire [`ROB_WIDTH-1:0] rs_broadcast_rob_id;
     wire [31:0] rs_broadcast_data;
     wire lsb_broadcast_en;
-    wire [31:0] lsb_broadcast_rob_id;
+    wire [`ROB_WIDTH-1:0] lsb_broadcast_rob_id;
     wire [31:0] lsb_broadcast_data;
 	ReservationStation reservation_station(
 		.clk_in(clk_in),
