@@ -124,9 +124,9 @@ module MemoryControl (
                             // addi4spn: addi rd, x2, nzuimm
                             3'b000: current_data <= {addi4spn_imm_extended, 5'b00010, 3'b000, r_4_2, 7'b0010011};
                             // lw: lw rd, nzuimm(rs1)
-                            3'b001: current_data <= {ls_imm_extended, r_9_7, 3'b010, r_4_2, 7'b0000011};
+                            3'b010: current_data <= {ls_imm_extended, r_9_7, 3'b010, r_4_2, 7'b0000011};
                             // sw: sw rs2, nzuimm(rs1)
-                            3'b010: current_data <= {ls_imm_extended[11:5], r_4_2, r_9_7, 3'b010, ls_imm_extended[4:0], 7'b0100011};
+                            3'b110: current_data <= {ls_imm_extended[11:5], r_4_2, r_9_7, 3'b010, ls_imm_extended[4:0], 7'b0100011};
                         endcase
                         2'b01: case (compressed_inst[15:13])
                             3'b100: case (compressed_inst[11:10])
