@@ -18,6 +18,7 @@ module cpu(
 	wire [31:0] dec2mc_addr;
 	wire mc2dec_rdy;
 	wire [31:0] mc2dec_data;
+	wire mc2dec_is_compressed;
 	wire rob2dec_full;
 	wire [`ROB_WIDTH-1:0] rob2dec_rob_empty_id;
 	wire dec2rob_rdy;
@@ -70,6 +71,7 @@ module cpu(
 		.mc_addr(dec2mc_addr),
 		.mc_rdy(mc2dec_rdy),
 		.mc_data(mc2dec_data),
+		.mc_is_compressed(mc2dec_is_compressed),
 		.rob_full(rob2dec_full),
 		.rob_empty_id(rob2dec_rob_empty_id),
 		.rob_rdy(dec2rob_rdy),
@@ -323,6 +325,7 @@ module cpu(
 		.dec_addr(dec2mc_addr),
 		.dec_rdy(mc2dec_rdy),
 		.dec_data(mc2dec_data),
+		.dec_is_compressed(mc2dec_is_compressed),
 		.lsb_en(lsb2mc_en),
 		.lsb_addr(lsb2mc_addr),
 		.lsb_type(lsb2mc_type),

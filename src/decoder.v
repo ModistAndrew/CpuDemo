@@ -11,6 +11,7 @@ module Decoder (
     output [31:0] mc_addr,
     input mc_rdy,
     input [31:0] mc_data,
+    input mc_is_compressed,
     // instruction to reorder buffer
     input rob_full,
     input [`ROB_WIDTH-1:0] rob_empty_id,  // use rob index to look up
@@ -69,6 +70,7 @@ module Decoder (
 // buffer
     // FETCH
     reg [31:0] inst;
+    reg is_compressed;
     // DECODE
     reg need_rs;
     reg need_lsb;
@@ -102,7 +104,7 @@ module Decoder (
     wire [31:0] imm_b = {{19{inst[31]}}, inst[31], inst[7], inst[30:25], inst[11:8], 1'b0};
     wire [31:0] imm_u = {inst[31:12], 12'b0};
     wire [31:0] imm_j = {{11{inst[31]}}, inst[31], inst[19:12], inst[20], inst[30:21], 1'b0};
-    wire [31:0] next_pc = pc + 4;
+    wire [31:0] next_pc = pc + (is_compressed ? 2 : 4);
     // COMMIT
     wire full = rob_full || (need_rs && rs_full) || (!need_rs && lsb_full);
     wire [31:0] jump_pc = pc + pc_offset;
@@ -143,6 +145,7 @@ module Decoder (
             state <= FETCH;  // start from fetch
             pc <= flush ? predict_correct_pc : 0;  // flush: correct the pc; rst: start from 0
             inst <= 0;
+            is_compressed <= 0;
             need_rs <= 0;
             need_lsb <= 0;
             need_j <= 0;
@@ -165,6 +168,7 @@ module Decoder (
                     if (mc_rdy) begin
                         state <= DECODE;
                         inst  <= mc_data;
+                        is_compressed <= mc_is_compressed;
                     end
                 end
                 DECODE: begin // use a tick to decode and do prediction

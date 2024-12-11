@@ -18,6 +18,7 @@ module MemoryControl (
     input [31:0] dec_addr,
     output reg dec_rdy,
     output [31:0] dec_data,
+    output reg dec_is_compressed,
 // memory data from/to load store buffer
     input lsb_en,
     input [31:0] lsb_addr,
@@ -32,12 +33,13 @@ module MemoryControl (
     localparam DECODER_2 = 3;
     localparam DECODER_3 = 4;
     localparam DECODER_4 = 5;
-    localparam LSB_0 = 6;
-    localparam LSB_1 = 7;
-    localparam LSB_2 = 8;
-    localparam LSB_3 = 9;
-    localparam LSB_4 = 10;
-    localparam COOLDOWN = 11;
+    localparam DECODER_DECOMPRESS = 6;
+    localparam LSB_0 = 7;
+    localparam LSB_1 = 8;
+    localparam LSB_2 = 9;
+    localparam LSB_3 = 10;
+    localparam LSB_4 = 11;
+    localparam COOLDOWN = 12;
     reg [3:0] state;
 // buffer
     reg [31:0] current_data;
@@ -47,6 +49,21 @@ module MemoryControl (
     wire lsb_larger_than_half = lsb_type[1];
     wire lsb_sign_extend = lsb_type[2];
     wire [31:0] mem_din_extended = {{24{mem_din[7] && lsb_sign_extend}}, mem_din};
+    // compressed instruction
+    wire uncompressed = mem_din[1] && mem_din[0];
+    wire [15:0] compressed_inst = {mem_din, current_data[7:0]};
+    wire [4:0] r_4_2 = {2'b01, compressed_inst[4:2]};
+    wire [4:0] r_9_7 = {2'b01, compressed_inst[9:7]};
+    wire [4:0] r_11_7 = compressed_inst[11:7];
+    wire [4:0] r_6_2 = compressed_inst[6:2];
+    wire [5:0] imm_12_6_2 = {compressed_inst[12], compressed_inst[6:2]};
+    wire [11:0] ls_imm_extended = {5'b00000, compressed_inst[5], compressed_inst[12:10], compressed_inst[6], 2'b00};
+    wire [11:0] addi4spn_imm_extended = {2'b00, compressed_inst[10:7], compressed_inst[12:11], compressed_inst[5], compressed_inst[6], 2'b00};
+    wire [11:0] addi16sp_imm_extended = {{3{compressed_inst[12]}}, compressed_inst[4:3], compressed_inst[5], compressed_inst[2], compressed_inst[6], 4'b0000};
+    wire [20:0] j_imm_extended = {{10{compressed_inst[12]}}, compressed_inst[8], compressed_inst[10:9], compressed_inst[6], compressed_inst[7], compressed_inst[2], compressed_inst[11], compressed_inst[5:3], 1'b0};
+    wire [12:0] bz_imm_extended = {{5{compressed_inst[12]}}, compressed_inst[6:5], compressed_inst[2], compressed_inst[11:10], compressed_inst[4:3], 1'b0};
+    wire [11:0] lwsp_imm_extended = {4'b0000, compressed_inst[3:2], compressed_inst[12], compressed_inst[6:4], 2'b00};
+    wire [11:0] swsp_imm_extended = {4'b0000, compressed_inst[8:7], compressed_inst[12:9], 2'b00};
 // output
     assign dec_data = current_data;
     assign lsb_read_data = current_data;
@@ -56,6 +73,7 @@ module MemoryControl (
             state <= SELECT;
             current_data <= 0;
             dec_rdy <= 0;
+            dec_is_compressed <= 0;
             lsb_rdy <= 0;
             mem_dout <= 0;
             mem_a <= 0;
@@ -78,7 +96,7 @@ module MemoryControl (
                     mem_a <= mem_a + 1;
                 end
                 DECODER_1: begin
-                    state <= DECODER_2;
+                    state <= uncompressed ? DECODER_2 : DECODER_DECOMPRESS;
                     current_data <= mem_din_extended;
                     mem_a <= mem_a + 1;
                 end
@@ -95,6 +113,79 @@ module MemoryControl (
                     state <= COOLDOWN;
                     current_data <= {mem_din_extended[7:0], current_data[23:0]};
                     dec_rdy <= 1;
+                    dec_is_compressed <= 0;
+                end
+                DECODER_DECOMPRESS: begin
+                    state <= COOLDOWN;
+                    dec_rdy <= 1;
+                    dec_is_compressed <= 1;
+                    case (compressed_inst[1:0])
+                        2'b00: case (compressed_inst[15:13])
+                            // addi4spn: addi rd, x2, nzuimm
+                            3'b000: current_data <= {addi4spn_imm_extended, 5'b00010, 3'b000, r_4_2, 7'b0010011};
+                            // lw: lw rd, nzuimm(rs1)
+                            3'b001: current_data <= {ls_imm_extended, r_9_7, 3'b010, r_4_2, 7'b0000011};
+                            // sw: sw rs2, nzuimm(rs1)
+                            3'b010: current_data <= {ls_imm_extended[11:5], r_4_2, r_9_7, 3'b010, ls_imm_extended[4:0], 7'b0100011};
+                        endcase
+                        2'b01: case (compressed_inst[15:13])
+                            3'b100: case (compressed_inst[11:10])
+                                // srli: srli rd, rd, imm
+                                2'b00: current_data <= {7'b0000000, imm_12_6_2[4:0], r_9_7, 3'b101, r_9_7, 7'b0010011};
+                                // srai: srai rd, rd, imm
+                                2'b01: current_data <= {7'b0100000, imm_12_6_2[4:0], r_9_7, 3'b101, r_9_7, 7'b0010011};
+                                // andi: andi rd, rd, imm
+                                2'b10: current_data <= {7'b0000000, imm_12_6_2[4:0], r_9_7, 3'b111, r_9_7, 7'b0010011};
+                                2'b11: case (compressed_inst[6:5])
+                                    // sub: sub rd, rd, rs2
+                                    2'b00: current_data <= {7'b0100000, r_4_2, r_9_7, 3'b000, r_9_7, 7'b0110011};
+                                    // xor: xor rd, rd, rs2
+                                    2'b01: current_data <= {7'b0000000, r_4_2, r_9_7, 3'b100, r_9_7, 7'b0110011};
+                                    // or: or rd, rd, rs2
+                                    2'b10: current_data <= {7'b0000000, r_4_2, r_9_7, 3'b110, r_9_7, 7'b0110011};
+                                    // and: and rd, rd, rs2
+                                    2'b11: current_data <= {7'b0000000, r_4_2, r_9_7, 3'b111, r_9_7, 7'b0110011};
+                                endcase
+                            endcase
+                            // addi: addi rd, rd, imm
+                            3'b000: current_data <= {{6{imm_12_6_2[5]}}, imm_12_6_2, r_11_7, 3'b000, r_11_7, 7'b0010011};
+                            // li: addi rd, x0, imm
+                            3'b010: current_data <= {{6{imm_12_6_2[5]}}, imm_12_6_2, 5'b00000, 3'b000, r_11_7, 7'b0010011};
+                            // addi16sp: addi x2, x2, imm
+                            // lui: lui rd, imm
+                            3'b011: current_data <= r_11_7 == 5'b00010 ? 
+                            {addi16sp_imm_extended, 5'b00010, 3'b000, 5'b00010, 7'b0010011} : 
+                            {{14{imm_12_6_2[5]}}, imm_12_6_2, r_11_7, 7'b0110111};
+                            // jal: jal x1, imm
+                            3'b001: current_data <= {j_imm_extended[20], j_imm_extended[10:1], j_imm_extended[11], j_imm_extended[19:12], 5'b00001, 7'b1101111};
+                            // j: jal x0, imm
+                            3'b101: current_data <= {j_imm_extended[20], j_imm_extended[10:1], j_imm_extended[11], j_imm_extended[19:12], 5'b00000, 7'b1101111};
+                            // beqz: beqz rs1, imm
+                            3'b110: current_data <= {bz_imm_extended[12], bz_imm_extended[10:5], r_9_7, 5'b00000, 3'b000, bz_imm_extended[4:1], bz_imm_extended[11], 7'b1100011};
+                            // bnez: bnez rs1, imm
+                            3'b111: current_data <= {bz_imm_extended[12], bz_imm_extended[10:5], r_9_7, 5'b00000, 3'b001, bz_imm_extended[4:1], bz_imm_extended[11], 7'b1100011};
+                        endcase
+                        2'b10: case (compressed_inst[15:13])
+                            // slli: slli rd, rd, imm
+                            3'b000: current_data <= {7'b0000000, imm_12_6_2[4:0], r_9_7, 3'b001, r_9_7, 7'b0010011};
+                            // lwsp: lw rd, imm(x2)
+                            3'b010: current_data <= {lwsp_imm_extended, 5'b00010, 3'b010, r_11_7, 7'b0000011};
+                            // swsp: sw rs2, imm(x2)
+                            3'b110: current_data <= {swsp_imm_extended[11:5], r_6_2, 5'b00010, 3'b010, swsp_imm_extended[4:0], 7'b0100011};
+                            3'b100: case (compressed_inst[12])
+                                // jr: jalr x0, rs1, 0
+                                // mv: add rd, x0, rs2
+                                1'b0: current_data <= r_6_2 == 5'b00000 ? 
+                                {12'b000000000000, r_11_7, 3'b000, 5'b00000, 7'b1100111} :
+                                {7'b0000000, r_6_2, 5'b00000, 3'b000, r_11_7, 7'b0110011};
+                                // jalr: jalr x1, rs1, 0
+                                // add: add rd, rd, rs2
+                                1'b1: current_data <= r_6_2 == 5'b00000 ? 
+                                {12'b000000000000, r_11_7, 3'b000, 5'b00001, 7'b1100111} :
+                                {7'b0000000, r_6_2, r_11_7, 3'b000, r_11_7, 7'b0110011};
+                            endcase
+                        endcase
+                    endcase
                 end
                 LSB_0: begin
                     state <= LSB_1;
