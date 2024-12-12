@@ -310,6 +310,14 @@ module cpu(
 		.commit_info_empty(commit_info_empty),
 		.commit_info_current_rob_id(commit_info_current_rob_id)
 	);
+    wire [31:0] read_ic_addr;
+    wire read_ic_rdy;
+    wire [31:0] read_ic_data;
+    wire read_ic_is_compressed;
+    wire write_ic_rdy;
+    wire [31:0] write_ic_addr;
+    wire [31:0] write_ic_data;
+    wire write_ic_is_compressed;
 	MemoryControl memory_control(
 		.clk_in(clk_in),
 		.rst_in(rst_in),
@@ -331,7 +339,28 @@ module cpu(
 		.lsb_type(lsb2mc_type),
 		.lsb_write_data(lsb2mc_write_data),
 		.lsb_rdy(mc2lsb_rdy),
-		.lsb_read_data(mc2lsb_read_data)
+		.lsb_read_data(mc2lsb_read_data),
+		.read_ic_addr(read_ic_addr),
+		.read_ic_rdy(read_ic_rdy),
+		.read_ic_data(read_ic_data),
+		.read_ic_is_compressed(read_ic_is_compressed),
+		.write_ic_rdy(write_ic_rdy),
+		.write_ic_addr(write_ic_addr),
+		.write_ic_data(write_ic_data),
+		.write_ic_is_compressed(write_ic_is_compressed)
+	);
+	InstructionCache instruction_cache(
+		.clk_in(clk_in),
+		.rst_in(rst_in),
+		.rdy_in(rdy_in),
+		.read_ic_addr(read_ic_addr),
+		.read_ic_rdy(read_ic_rdy),
+		.read_ic_data(read_ic_data),
+		.read_ic_is_compressed(read_ic_is_compressed),
+		.write_ic_rdy(write_ic_rdy),
+		.write_ic_addr(write_ic_addr),
+		.write_ic_data(write_ic_data),
+		.write_ic_is_compressed(write_ic_is_compressed)
 	);
 // Specifications:
 // - Pause cpu(freeze pc, registers, etc.) when rdy_in is low

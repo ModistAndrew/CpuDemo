@@ -18,14 +18,24 @@ module MemoryControl (
     input [31:0] dec_addr,
     output reg dec_rdy,
     output [31:0] dec_data,
-    output reg dec_is_compressed,
+    output dec_is_compressed,
 // memory data from/to load store buffer
     input lsb_en,
     input [31:0] lsb_addr,
     input [`LSB_TYPE_WIDTH-1:0] lsb_type, // type as in load store buffer
     input [31:0] lsb_write_data,
     output reg lsb_rdy,
-    output [31:0] lsb_read_data
+    output [31:0] lsb_read_data,
+    // data from instruction cache
+    output [31:0] read_ic_addr,
+    input read_ic_rdy,
+    input [31:0] read_ic_data,
+    input read_ic_is_compressed,
+    // data to instruction cache
+    output reg write_ic_rdy,
+    output [31:0] write_ic_addr,
+    output [31:0] write_ic_data,
+    output write_ic_is_compressed
 );
     localparam SELECT = 0;
     localparam DECODER_0 = 1;
@@ -43,6 +53,7 @@ module MemoryControl (
     reg [3:0] state;
 // buffer
     reg [31:0] current_data;
+    reg is_compressed;
 // wires
     wire lsb_wr = lsb_type[3];
     wire lsb_larger_than_byte = lsb_type[1] || lsb_type[0];
@@ -66,15 +77,21 @@ module MemoryControl (
     wire [11:0] swsp_imm_extended = {4'b0000, compressed_inst[8:7], compressed_inst[12:9], 2'b00};
 // output
     assign dec_data = current_data;
+    assign dec_is_compressed = is_compressed;
     assign lsb_read_data = current_data;
+    assign read_ic_addr = dec_addr;
+    assign write_ic_addr = dec_addr;
+    assign write_ic_data = current_data;
+    assign write_ic_is_compressed = is_compressed;
 // cycle
     always @(posedge clk_in) begin
         if (rst_in || flush && rdy_in) begin
             state <= SELECT;
             current_data <= 0;
+            is_compressed <= 0;
             dec_rdy <= 0;
-            dec_is_compressed <= 0;
             lsb_rdy <= 0;
+            write_ic_rdy <= 0;
             mem_dout <= 0;
             mem_a <= 0;
             mem_wr <= 0;
@@ -87,8 +104,15 @@ module MemoryControl (
                         mem_a <= lsb_addr;
                         mem_wr <= lsb_wr;
                     end else if (dec_en) begin
-                        state <= DECODER_0;
-                        mem_a <= dec_addr;
+                        if (read_ic_rdy) begin
+                            state <= COOLDOWN;
+                            dec_rdy <= 1;
+                            current_data <= read_ic_data;
+                            is_compressed <= read_ic_is_compressed;
+                        end else begin
+                            state <= DECODER_0;
+                            mem_a <= dec_addr;
+                        end
                     end
                 end
                 DECODER_0: begin
@@ -112,13 +136,15 @@ module MemoryControl (
                 DECODER_4: begin
                     state <= COOLDOWN;
                     current_data <= {mem_din_extended[7:0], current_data[23:0]};
+                    is_compressed <= 0;
                     dec_rdy <= 1;
-                    dec_is_compressed <= 0;
+                    write_ic_rdy <= 1;
                 end
                 DECODER_DECOMPRESS: begin
                     state <= COOLDOWN;
                     dec_rdy <= 1;
-                    dec_is_compressed <= 1;
+                    write_ic_rdy <= 1;
+                    is_compressed <= 1;
                     case (compressed_inst[1:0])
                         2'b00: case (compressed_inst[15:13])
                             // addi4spn: addi rd, x2, nzuimm
@@ -222,6 +248,7 @@ module MemoryControl (
                     state <= SELECT;
                     dec_rdy <= 0;
                     lsb_rdy <= 0;
+                    write_ic_rdy <= 0;
                 end
             endcase
         end

@@ -9,3 +9,5 @@
 `define RS_TYPE_WIDTH 6 // {isBr, useImm, funct7[5], funct3} (JALR's isBr and useImm are 1)
 `define REG_SIZE 32
 `define REG_WIDTH 5
+`define IC_SIZE 64
+`define IC_WIDTH 6
