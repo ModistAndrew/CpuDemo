@@ -74,36 +74,4 @@ module RegisterFile(
             end
         end
     end
-    wire [31:0] zero = data[0];
-    wire [31:0] ra = data[1];
-    wire [31:0] sp = data[2];
-    wire [31:0] gp = data[3];
-    wire [31:0] tp = data[4];
-    wire [31:0] t0 = data[5];
-    wire [31:0] t1 = data[6];
-    wire [31:0] t2 = data[7];
-    wire [31:0] s0 = data[8];
-    wire [31:0] s1 = data[9];
-    wire [31:0] a0 = data[10];
-    wire [31:0] a1 = data[11];
-    wire [31:0] a2 = data[12];
-    wire [31:0] a3 = data[13];
-    wire [31:0] a4 = data[14];
-    wire [31:0] a5 = data[15];
-    wire [31:0] a6 = data[16];
-    wire [31:0] a7 = data[17];
-    wire [31:0] s2 = data[18];
-    wire [31:0] s3 = data[19];
-    wire [31:0] s4 = data[20];
-    wire [31:0] s5 = data[21];
-    wire [31:0] s6 = data[22];
-    wire [31:0] s7 = data[23];
-    wire [31:0] s8 = data[24];
-    wire [31:0] s9 = data[25];
-    wire [31:0] s10 = data[26];
-    wire [31:0] s11 = data[27];
-    wire [31:0] t3 = data[28];
-    wire [31:0] t4 = data[29];
-    wire [31:0] t5 = data[30];
-    wire [31:0] t6 = data[31];
 endmodule

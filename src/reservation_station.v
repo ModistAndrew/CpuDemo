@@ -78,8 +78,8 @@ module ReservationStation(
             end
         end
     endgenerate
-    wire empty = empty_tree[1];
-    wire executable = executable_tree[1];
+    wire has_empty = empty_tree[1];
+    wire has_executable = executable_tree[1];
     wire [`RS_WIDTH-1:0] empty_pos = empty_pos_tree[1];
     wire [`RS_WIDTH-1:0] executable_pos = executable_pos_tree[1];
     
@@ -88,12 +88,12 @@ module ReservationStation(
     wire rs_broadcast_meet_insert_k = rs_broadcast_en && rs_broadcast_rob_id == dec_dependency_k;
     wire lsb_broadcast_meet_insert_k = lsb_broadcast_en && lsb_broadcast_rob_id == dec_dependency_k;
 // output
-    assign dec_full = !empty;
+    assign dec_full = !has_empty;
     assign rob_rdy = alu_rdy;
     assign rob_rob_id = alu_rob_id_out;
     assign rob_data = alu_result;
     assign rob_set_jump_addr = alu_set_jump_addr;
-    assign alu_en = executable;
+    assign alu_en = has_executable;
     assign alu_rob_id = rob_id[executable_pos];
     assign alu_data_j = data_j[executable_pos];
     assign alu_data_k = data_k[executable_pos];
@@ -153,7 +153,7 @@ module ReservationStation(
                     end
                 end
             end
-            if (executable) begin // remove the instruction from rs; alu read the data in the same cycle and output in the next cycle
+            if (has_executable) begin // remove the instruction from rs; alu read the data in the same cycle and output in the next cycle
                 present[executable_pos] <= 0;
             end
         end
