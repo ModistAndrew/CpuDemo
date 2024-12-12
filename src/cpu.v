@@ -341,7 +341,7 @@ module cpu(
 		.lsb_rdy(mc2lsb_rdy),
 		.lsb_read_data(mc2lsb_read_data),
 		.read_ic_addr(read_ic_addr),
-		.read_ic_rdy(read_ic_rdy),
+		.read_ic_rdy(1'b0),
 		.read_ic_data(read_ic_data),
 		.read_ic_is_compressed(read_ic_is_compressed),
 		.write_ic_rdy(write_ic_rdy),
