@@ -135,7 +135,7 @@ module MemoryControl (
                                 // srai: srai rd, rd, imm
                                 2'b01: current_data <= {7'b0100000, imm_12_6_2_extended[4:0], r_9_7, 3'b101, r_9_7, 7'b0010011};
                                 // andi: andi rd, rd, imm
-                                2'b10: current_data <= {7'b0000000, imm_12_6_2_extended[4:0], r_9_7, 3'b111, r_9_7, 7'b0010011};
+                                2'b10: current_data <= {imm_12_6_2_extended, r_9_7, 3'b111, r_9_7, 7'b0010011};
                                 2'b11: case (compressed_inst[6:5])
                                     // sub: sub rd, rd, rs2
                                     2'b00: current_data <= {7'b0100000, r_4_2, r_9_7, 3'b000, r_9_7, 7'b0110011};
