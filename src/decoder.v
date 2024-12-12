@@ -172,7 +172,6 @@ module Decoder (
                     end
                 end
                 DECODE: begin // use a tick to decode and do prediction
-                // TODO: nop
                     state <= COMMIT;
                     rs_type <= {opcode==BRANCH || opcode==JALR, opcode==ARITH_IMM || opcode==JALR, funct3, funct7[5]};
                     rob_type <= {opcode==JALR || opcode==BRANCH, 

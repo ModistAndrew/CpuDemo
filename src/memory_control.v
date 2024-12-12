@@ -56,7 +56,7 @@ module MemoryControl (
     wire [4:0] r_9_7 = {2'b01, compressed_inst[9:7]};
     wire [4:0] r_11_7 = compressed_inst[11:7];
     wire [4:0] r_6_2 = compressed_inst[6:2];
-    wire [5:0] imm_12_6_2 = {compressed_inst[12], compressed_inst[6:2]};
+    wire [11:0] imm_12_6_2_extended = {{7{compressed_inst[12]}}, compressed_inst[6:2]};
     wire [11:0] ls_imm_extended = {5'b00000, compressed_inst[5], compressed_inst[12:10], compressed_inst[6], 2'b00};
     wire [11:0] addi4spn_imm_extended = {2'b00, compressed_inst[10:7], compressed_inst[12:11], compressed_inst[5], compressed_inst[6], 2'b00};
     wire [11:0] addi16sp_imm_extended = {{3{compressed_inst[12]}}, compressed_inst[4:3], compressed_inst[5], compressed_inst[2], compressed_inst[6], 4'b0000};
@@ -131,11 +131,11 @@ module MemoryControl (
                         2'b01: case (compressed_inst[15:13])
                             3'b100: case (compressed_inst[11:10])
                                 // srli: srli rd, rd, imm
-                                2'b00: current_data <= {7'b0000000, imm_12_6_2[4:0], r_9_7, 3'b101, r_9_7, 7'b0010011};
+                                2'b00: current_data <= {7'b0000000, imm_12_6_2_extended[4:0], r_9_7, 3'b101, r_9_7, 7'b0010011};
                                 // srai: srai rd, rd, imm
-                                2'b01: current_data <= {7'b0100000, imm_12_6_2[4:0], r_9_7, 3'b101, r_9_7, 7'b0010011};
+                                2'b01: current_data <= {7'b0100000, imm_12_6_2_extended[4:0], r_9_7, 3'b101, r_9_7, 7'b0010011};
                                 // andi: andi rd, rd, imm
-                                2'b10: current_data <= {7'b0000000, imm_12_6_2[4:0], r_9_7, 3'b111, r_9_7, 7'b0010011};
+                                2'b10: current_data <= {7'b0000000, imm_12_6_2_extended[4:0], r_9_7, 3'b111, r_9_7, 7'b0010011};
                                 2'b11: case (compressed_inst[6:5])
                                     // sub: sub rd, rd, rs2
                                     2'b00: current_data <= {7'b0100000, r_4_2, r_9_7, 3'b000, r_9_7, 7'b0110011};
@@ -148,14 +148,14 @@ module MemoryControl (
                                 endcase
                             endcase
                             // addi: addi rd, rd, imm
-                            3'b000: current_data <= {{6{imm_12_6_2[5]}}, imm_12_6_2, r_11_7, 3'b000, r_11_7, 7'b0010011};
+                            3'b000: current_data <= {imm_12_6_2_extended, r_11_7, 3'b000, r_11_7, 7'b0010011};
                             // li: addi rd, x0, imm
-                            3'b010: current_data <= {{6{imm_12_6_2[5]}}, imm_12_6_2, 5'b00000, 3'b000, r_11_7, 7'b0010011};
+                            3'b010: current_data <= {imm_12_6_2_extended, 5'b00000, 3'b000, r_11_7, 7'b0010011};
                             // addi16sp: addi x2, x2, imm
                             // lui: lui rd, imm
                             3'b011: current_data <= r_11_7 == 5'b00010 ? 
                             {addi16sp_imm_extended, 5'b00010, 3'b000, 5'b00010, 7'b0010011} : 
-                            {{14{imm_12_6_2[5]}}, imm_12_6_2, r_11_7, 7'b0110111};
+                            {{8{imm_12_6_2_extended[11]}}, imm_12_6_2_extended, r_11_7, 7'b0110111};
                             // jal: jal x1, imm
                             3'b001: current_data <= {j_imm_extended[20], j_imm_extended[10:1], j_imm_extended[11], j_imm_extended[19:12], 5'b00001, 7'b1101111};
                             // j: jal x0, imm
@@ -167,7 +167,7 @@ module MemoryControl (
                         endcase
                         2'b10: case (compressed_inst[15:13])
                             // slli: slli rd, rd, imm
-                            3'b000: current_data <= {7'b0000000, imm_12_6_2[4:0], r_9_7, 3'b001, r_9_7, 7'b0010011};
+                            3'b000: current_data <= {7'b0000000, imm_12_6_2_extended[4:0], r_11_7, 3'b001, r_11_7, 7'b0010011};
                             // lwsp: lw rd, imm(x2)
                             3'b010: current_data <= {lwsp_imm_extended, 5'b00010, 3'b010, r_11_7, 7'b0000011};
                             // swsp: sw rs2, imm(x2)
