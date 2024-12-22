@@ -8,8 +8,8 @@ module MemoryControl (
     input rdy_in,
     input [7:0] mem_din,
     output reg [7:0] mem_dout,
-    output reg [31:0] mem_a,
-    output reg mem_wr,
+    output [31:0] mem_a_out,
+    output mem_wr_out,
     input io_buffer_full,
     output [31:0] dbgreg_dout,
     input flush,
@@ -54,6 +54,9 @@ module MemoryControl (
 // buffer
     reg [31:0] current_data;
     reg is_compressed;
+    reg mem_en;
+    reg [31:0] mem_a;
+    reg mem_wr;
 // wires
     wire lsb_wr = lsb_type[3];
     wire lsb_larger_than_byte = lsb_type[1] || lsb_type[0];
@@ -83,6 +86,8 @@ module MemoryControl (
     assign write_ic_addr = dec_addr;
     assign write_ic_data = current_data;
     assign write_ic_is_compressed = is_compressed;
+    assign mem_a_out = mem_en ? mem_a : 0;
+    assign mem_wr_out = mem_en && mem_wr;
 // cycle
     always @(posedge clk_in) begin
         if (rst_in || flush && rdy_in) begin
@@ -93,14 +98,16 @@ module MemoryControl (
             lsb_rdy <= 0;
             write_ic_rdy <= 0;
             mem_dout <= 0;
+            mem_en <= 0;
             mem_a <= 0;
             mem_wr <= 0;
-        end else if (rdy_in && !io_buffer_full) begin
+        end else if (rdy_in) begin
             case (state)
                 SELECT: begin
-                    if (lsb_en) begin // lsb is of higher priority
+                    if (lsb_en && !io_buffer_full) begin // lsb is of higher priority
                         state <= LSB_0;
                         mem_dout <= lsb_write_data[7:0];
+                        mem_en <= 1;
                         mem_a <= lsb_addr;
                         mem_wr <= lsb_wr;
                     end else if (dec_en) begin
@@ -110,8 +117,10 @@ module MemoryControl (
                             current_data <= read_ic_data;
                             is_compressed <= read_ic_is_compressed;
                         end else begin
+                            mem_en <= 1;
                             state <= DECODER_0;
                             mem_a <= dec_addr;
+                            mem_wr <= 0;
                         end
                     end
                 end
@@ -123,6 +132,7 @@ module MemoryControl (
                     state <= uncompressed ? DECODER_2 : DECODER_DECOMPRESS;
                     current_data <= mem_din_extended;
                     mem_a <= mem_a + 1;
+                    mem_en <= uncompressed;
                 end
                 DECODER_2: begin
                     state <= DECODER_3;
@@ -132,6 +142,7 @@ module MemoryControl (
                 DECODER_3: begin
                     state <= DECODER_4;
                     current_data <= {mem_din_extended[15:0], current_data[15:0]};
+                    mem_en <= 0;
                 end
                 DECODER_4: begin
                     state <= COOLDOWN;
@@ -217,7 +228,7 @@ module MemoryControl (
                     state <= LSB_1;
                     mem_dout <= lsb_write_data[15:8];
                     mem_a <= mem_a + 1;
-                    mem_wr <= mem_wr && lsb_larger_than_byte; // if lsb is larger than byte, continue writing
+                    mem_en <= lsb_larger_than_byte; // if lsb is larger than byte, continue writing
                 end
                 LSB_1: begin
                     state <= lsb_larger_than_byte ? LSB_2 : COOLDOWN;
@@ -225,7 +236,7 @@ module MemoryControl (
                     lsb_rdy <= !lsb_larger_than_byte;
                     mem_dout <= lsb_write_data[23:16];
                     mem_a <= mem_a + 1;
-                    mem_wr <= mem_wr && lsb_larger_than_half; // if lsb is larger than half, continue writing
+                    mem_en <= lsb_larger_than_half; // if lsb is larger than half, continue writing
                 end
                 LSB_2: begin
                     state <= lsb_larger_than_half ? LSB_3 : COOLDOWN;
@@ -237,7 +248,7 @@ module MemoryControl (
                 LSB_3: begin
                     state <= LSB_4;
                     current_data <= {mem_din_extended[15:0], current_data[15:0]};
-                    mem_wr <= 0;
+                    mem_en <= 0;
                 end
                 LSB_4: begin
                     state <= COOLDOWN;
