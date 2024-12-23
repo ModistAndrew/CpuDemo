@@ -11,7 +11,6 @@ module MemoryControl (
     output [31:0] mem_a_out,
     output mem_wr_out,
     input io_buffer_full,
-    output [31:0] dbgreg_dout,
     input flush,
 // memory data to decoder
     input dec_en,
@@ -27,13 +26,13 @@ module MemoryControl (
     output reg lsb_rdy,
     output [31:0] lsb_read_data,
     // data from instruction cache
-    output [31:0] read_ic_addr,
+    output [31:1] read_ic_addr,
     input read_ic_rdy,
     input [31:0] read_ic_data,
     input read_ic_is_compressed,
     // data to instruction cache
     output reg write_ic_rdy,
-    output [31:0] write_ic_addr,
+    output [31:1] write_ic_addr,
     output [31:0] write_ic_data,
     output write_ic_is_compressed
 );
@@ -82,8 +81,8 @@ module MemoryControl (
     assign dec_data = current_data;
     assign dec_is_compressed = is_compressed;
     assign lsb_read_data = current_data;
-    assign read_ic_addr = dec_addr;
-    assign write_ic_addr = dec_addr;
+    assign read_ic_addr = dec_addr[31:1];
+    assign write_ic_addr = dec_addr[31:1];
     assign write_ic_data = current_data;
     assign write_ic_is_compressed = is_compressed;
     assign mem_a_out = mem_en ? mem_a : 0;

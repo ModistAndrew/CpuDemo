@@ -4,13 +4,13 @@ module InstructionCache(
     input rst_in,
     input rdy_in,
     // data to memory control
-    input [31:0] read_ic_addr,
+    input [31:1] read_ic_addr,
     output read_ic_rdy,
     output [31:0] read_ic_data,
     output read_ic_is_compressed,
     // data from memory control
     input write_ic_rdy,
-    input [31:0] write_ic_addr,
+    input [31:1] write_ic_addr,
     input [31:0] write_ic_data,
     input write_ic_is_compressed
 );

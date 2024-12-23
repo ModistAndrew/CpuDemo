@@ -13,6 +13,8 @@ module cpu(
 	output [31:0] dbgreg_dout // cpu register output (debugging demo)
 );
 // implementation goes here
+	assign dbgreg_dout = 32'd114514;
+
 	wire flush;
 	wire dec2mc_en;
 	wire [31:0] dec2mc_addr;
@@ -310,12 +312,12 @@ module cpu(
 		.commit_info_empty(commit_info_empty),
 		.commit_info_current_rob_id(commit_info_current_rob_id)
 	);
-    wire [31:0] read_ic_addr;
+    wire [31:1] read_ic_addr;
     wire read_ic_rdy;
     wire [31:0] read_ic_data;
     wire read_ic_is_compressed;
     wire write_ic_rdy;
-    wire [31:0] write_ic_addr;
+    wire [31:1] write_ic_addr;
     wire [31:0] write_ic_data;
     wire write_ic_is_compressed;
 	MemoryControl memory_control(
@@ -327,7 +329,6 @@ module cpu(
 		.mem_a_out(mem_a),
 		.mem_wr_out(mem_wr),
 		.io_buffer_full(io_buffer_full),
-		.dbgreg_dout(dbgreg_dout),
 		.flush(flush),
 		.dec_en(dec2mc_en),
 		.dec_addr(dec2mc_addr),
