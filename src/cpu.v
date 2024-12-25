@@ -64,6 +64,9 @@ module cpu(
 	wire [`ROB_WIDTH-1:0] reg2dec_dependency_k;
 	wire [`REG_WIDTH-1:0] pending_mark_reg_id;
 	wire [`ROB_WIDTH-1:0] pending_mark_rob_id;
+	wire branch_result_en;
+    wire [31:0] branch_result_next_pc;
+    wire branch_result_taken;
 	Decoder decoder(
 		.clk_in(clk_in),
 		.rst_in(rst_in),
@@ -116,7 +119,10 @@ module cpu(
 		.reg_dependency_j(reg2dec_dependency_j),
 		.reg_dependency_k(reg2dec_dependency_k),
 		.pending_mark_reg_id(pending_mark_reg_id),
-		.pending_mark_rob_id(pending_mark_rob_id)
+		.pending_mark_rob_id(pending_mark_rob_id),
+		.branch_result_en(branch_result_en),
+		.branch_result_next_pc(branch_result_next_pc),
+		.branch_result_taken(branch_result_taken)
 	);
     wire rs2rob_rdy;
     wire [`ROB_WIDTH-1:0] rs2rob_rob_id;
@@ -267,7 +273,10 @@ module cpu(
 		.rs_data(rs2rob_data),
 		.rs_set_jump_addr(rs2rob_set_jump_addr),
 		.commit_info_empty(commit_info_empty),
-		.commit_info_current_rob_id(commit_info_current_rob_id)
+		.commit_info_current_rob_id(commit_info_current_rob_id),
+		.branch_result_en(branch_result_en),
+		.branch_result_next_pc(branch_result_next_pc),
+		.branch_result_taken(branch_result_taken)
 	);
 	wire lsb2mc_en;
     wire [31:0] lsb2mc_addr;

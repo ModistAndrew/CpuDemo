@@ -43,7 +43,11 @@ module ReorderBuffer(
     input rs_set_jump_addr,
 // commit info to load store buffer (to ensure store instructions are committed in order)
     output commit_info_empty,
-    output [`ROB_WIDTH-1:0] commit_info_current_rob_id
+    output [`ROB_WIDTH-1:0] commit_info_current_rob_id,
+// branch result to decoder
+    output branch_result_en,
+    output [31:0] branch_result_next_pc,
+    output branch_result_taken
 );
     reg [`ROB_WIDTH-1:0] head;
     reg [`ROB_WIDTH-1:0] tail;
@@ -62,9 +66,9 @@ module ReorderBuffer(
     wire [31:0] commit_next_addr = next_addr[head];
     wire [31:0] commit_jump_addr = jump_addr[head];
     wire commit_predict = predict[head];
-    wire prediction_wrong = commit_type[1] && (commit_type[0] || commit_predict ^ commit_res[0]); // BRANCH && (JALR || prediction is wrong)
+    wire prediction_wrong = commit_type[1] && (commit_predict ^ commit_res[0]);
 
-    wire commit_to_reg_en = commit_en && commit_type[0]; // only REG or JALR needs to commit to register file
+    wire commit_to_reg_en = commit_en && commit_type[0]; // only REG needs to commit to register file
     wire search_committable_j = committable[reg_rob_id_j];
     wire search_committable_k = committable[reg_rob_id_k];
     wire rs_meet_j = rs_rdy && rs_rob_id == reg_rob_id_j;
@@ -85,6 +89,9 @@ module ReorderBuffer(
     assign commit_rob_id = head; // use combinational logic here as JALR must be committed immediately (flush will be issued in the next cycle)
     assign commit_info_empty = !present[head];
     assign commit_info_current_rob_id = head;
+    assign branch_result_en = commit_en && commit_type[1];
+    assign branch_result_next_pc = commit_next_addr;
+    assign branch_result_taken = commit_res[0];
 // cycle
     always @(posedge clk_in) begin: Main
         integer i;

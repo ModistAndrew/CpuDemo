@@ -60,13 +60,18 @@ module Decoder (
     input [`ROB_WIDTH-1:0] reg_dependency_k,
     // pending mark to register file
     output [`REG_WIDTH-1:0] pending_mark_reg_id,
-    output [`ROB_WIDTH-1:0] pending_mark_rob_id
+    output [`ROB_WIDTH-1:0] pending_mark_rob_id,
+    // branch result from reorder buffer
+    input branch_result_en,
+    input [31:0] branch_result_next_pc,
+    input branch_result_taken
 );
     localparam FETCH = 0;
     localparam DECODE = 1;
     localparam COMMIT = 2;
     reg [1:0] state;
     reg [31:0] pc;
+    reg [1:0] predictor [`PREDICTOR_SIZE-1:0];
 // buffer
     // FETCH
     reg [31:0] inst;
@@ -105,9 +110,13 @@ module Decoder (
     wire [31:0] imm_u = {inst[31:12], 12'b0};
     wire [31:0] imm_j = {{11{inst[31]}}, inst[31], inst[19:12], inst[20], inst[30:21], 1'b0};
     wire [31:0] next_pc = pc + (is_compressed ? 2 : 4);
+    wire predictor_taken = predictor[next_pc[`PREDICTOR_WIDTH:1]][1];
     // COMMIT
     wire full = rob_full || (need_rs && rs_full) || (!need_rs && lsb_full);
+    wire is_jalr = opcode == JALR;
+    wire jalr_pending = is_jalr && reg_pending_j;
     wire [31:0] jump_pc = pc + pc_offset;
+    wire [31:0] jalr_pc = reg_data_j + imm_data;
 
     wire pending_j = need_j && reg_pending_j;
     wire pending_k = need_k && reg_pending_k;
@@ -140,7 +149,16 @@ module Decoder (
     assign pending_mark_reg_id = rdy && rob_type[0] ? dest : 0; // only mark when committable to reg
     assign pending_mark_rob_id = rob_empty_id;
 // cycle
-    always @(posedge clk_in) begin
+    always @(posedge clk_in) begin: Main
+        integer i;
+        if (branch_result_en) begin
+            case (predictor[branch_result_next_pc[`PREDICTOR_WIDTH:1]])
+                2'b00: predictor[branch_result_next_pc[`PREDICTOR_WIDTH:1]] <= branch_result_taken ? 2'b01 : 2'b00;
+                2'b01: predictor[branch_result_next_pc[`PREDICTOR_WIDTH:1]] <= branch_result_taken ? 2'b10 : 2'b00;
+                2'b10: predictor[branch_result_next_pc[`PREDICTOR_WIDTH:1]] <= branch_result_taken ? 2'b11 : 2'b01;
+                2'b11: predictor[branch_result_next_pc[`PREDICTOR_WIDTH:1]] <= branch_result_taken ? 2'b11 : 2'b10;
+            endcase
+        end
         if (rst_in || flush && rdy_in) begin
             state <= FETCH;  // start from fetch
             pc <= flush ? predict_correct_pc : 0;  // flush: correct the pc; rst: start from 0
@@ -161,6 +179,11 @@ module Decoder (
             rob_jump_addr <= 0;
             rs_type <= 0;
             lsb_type <= 0;
+            if (rst_in) begin
+                for (i = 0; i < `PREDICTOR_SIZE; i = i + 1) begin
+                    predictor[i] <= 2'b01;
+                end
+            end
         end else if (rdy_in) begin
             case (state)
                 FETCH: begin  // wait for memory to be ready
@@ -174,7 +197,7 @@ module Decoder (
                 DECODE: begin // use a tick to decode and do prediction
                     state <= COMMIT;
                     rs_type <= {opcode==BRANCH || opcode==JALR, opcode==ARITH_IMM || opcode==JALR, funct3, funct7[5]};
-                    rob_type <= {opcode==JALR || opcode==BRANCH, 
+                    rob_type <= {opcode==BRANCH, 
                     opcode==LUI || opcode==AUIPC || opcode==JAL || opcode==JALR || opcode==ARITH_IMM || opcode==ARITH_REG || opcode==LOAD};
                     lsb_type <= {opcode==STORE, funct3};
                     case (opcode)
@@ -201,27 +224,27 @@ module Decoder (
                             need_lsb <= 0;
                             need_j <= 0;
                             need_k <= 0;
-                            predict <= 1;
+                            predict <= 1; // handled with branch prediction
                             pc_offset <= imm_j;
                             rob_committable <= 1;
                             rob_res <= next_pc;
                         end
-                        JALR: begin
-                            need_rs  <= 1;
+                        JALR: begin 
+                            need_rs  <= 0;
                             imm_data <= imm_i1;
                             need_lsb <= 0;
-                            need_j   <= 1;
+                            need_j   <= 0;
                             need_k   <= 0;
-                            predict  <= 0; // JALR should not be predicted as j is not known. jump_addr will be filled by alu
-                            rob_committable <= 0;
-                            rob_res <= next_pc; // although result is ready, it is not committable until jump_addr is ready
+                            predict  <= 0; // is to be specially handled
+                            rob_committable <= 1;
+                            rob_res <= next_pc; // result is ready
                         end
                         BRANCH: begin
                             need_rs <= 1;
                             need_lsb <= 0;
                             need_j <= 1;
                             need_k <= 1;
-                            predict <= 1;  // TODO: branch prediction
+                            predict <= predictor_taken;
                             pc_offset <= imm_b;
                             rob_committable <= 0;
                         end
@@ -263,12 +286,12 @@ module Decoder (
                     endcase
                 end
                 COMMIT: begin  // commit when ready and use prediction to update pc
-                    if (!full) begin
+                    if (!full && !jalr_pending) begin
                         state <= FETCH;
                         rdy <= 1;
                         rob_next_addr <= next_pc;
                         rob_jump_addr <= jump_pc; // have to use buffer as pc is updated in the next cycle
-                        pc <= predict ? jump_pc : next_pc;
+                        pc <= predict ? jump_pc : is_jalr ? jalr_pc : next_pc;
                     end
                 end
             endcase

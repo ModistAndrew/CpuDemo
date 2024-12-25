@@ -60,7 +60,7 @@ module MemoryControl (
     wire lsb_wr = lsb_type[3];
     wire lsb_larger_than_byte = lsb_type[1] || lsb_type[0];
     wire lsb_larger_than_half = lsb_type[1];
-    wire lsb_sign_extend = lsb_type[2];
+    wire lsb_sign_extend = !lsb_type[2];
     wire [31:0] mem_din_extended = {{24{mem_din[7] && lsb_sign_extend}}, mem_din};
     // compressed instruction
     wire uncompressed = mem_din[1] && mem_din[0];
