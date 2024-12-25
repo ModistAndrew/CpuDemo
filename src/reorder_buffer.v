@@ -46,7 +46,7 @@ module ReorderBuffer(
     output [`ROB_WIDTH-1:0] commit_info_current_rob_id,
 // branch result to decoder
     output branch_result_en,
-    output [31:0] branch_result_next_pc,
+    output [`PREDICTOR_WIDTH:1] branch_result_next_pc,
     output branch_result_taken
 );
     reg [`ROB_WIDTH-1:0] head;
@@ -90,7 +90,7 @@ module ReorderBuffer(
     assign commit_info_empty = !present[head];
     assign commit_info_current_rob_id = head;
     assign branch_result_en = commit_en && commit_type[1];
-    assign branch_result_next_pc = commit_next_addr;
+    assign branch_result_next_pc = commit_next_addr[`PREDICTOR_WIDTH:1];
     assign branch_result_taken = commit_res[0];
 // cycle
     always @(posedge clk_in) begin: Main

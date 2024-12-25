@@ -63,7 +63,7 @@ module Decoder (
     output [`ROB_WIDTH-1:0] pending_mark_rob_id,
     // branch result from reorder buffer
     input branch_result_en,
-    input [31:0] branch_result_next_pc,
+    input [`PREDICTOR_WIDTH:1] branch_result_next_pc,
     input branch_result_taken
 );
     localparam FETCH = 0;
@@ -152,11 +152,11 @@ module Decoder (
     always @(posedge clk_in) begin: Main
         integer i;
         if (branch_result_en) begin
-            case (predictor[branch_result_next_pc[`PREDICTOR_WIDTH:1]])
-                2'b00: predictor[branch_result_next_pc[`PREDICTOR_WIDTH:1]] <= branch_result_taken ? 2'b01 : 2'b00;
-                2'b01: predictor[branch_result_next_pc[`PREDICTOR_WIDTH:1]] <= branch_result_taken ? 2'b10 : 2'b00;
-                2'b10: predictor[branch_result_next_pc[`PREDICTOR_WIDTH:1]] <= branch_result_taken ? 2'b11 : 2'b01;
-                2'b11: predictor[branch_result_next_pc[`PREDICTOR_WIDTH:1]] <= branch_result_taken ? 2'b11 : 2'b10;
+            case (predictor[branch_result_next_pc])
+                2'b00: predictor[branch_result_next_pc] <= branch_result_taken ? 2'b01 : 2'b00;
+                2'b01: predictor[branch_result_next_pc] <= branch_result_taken ? 2'b10 : 2'b00;
+                2'b10: predictor[branch_result_next_pc] <= branch_result_taken ? 2'b11 : 2'b01;
+                2'b11: predictor[branch_result_next_pc] <= branch_result_taken ? 2'b11 : 2'b10;
             endcase
         end
         if (rst_in || flush && rdy_in) begin

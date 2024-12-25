@@ -65,7 +65,7 @@ module cpu(
 	wire [`REG_WIDTH-1:0] pending_mark_reg_id;
 	wire [`ROB_WIDTH-1:0] pending_mark_rob_id;
 	wire branch_result_en;
-    wire [31:0] branch_result_next_pc;
+    wire [`PREDICTOR_WIDTH:1] branch_result_next_pc;
     wire branch_result_taken;
 	Decoder decoder(
 		.clk_in(clk_in),
